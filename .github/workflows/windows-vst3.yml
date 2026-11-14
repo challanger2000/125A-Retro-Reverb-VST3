@@ -15,6 +15,15 @@ jobs:
       - name: Build with pinned SDK
         shell: cmd
         run: call build_windows.bat
+      - name: Steinberg VST3 Validator (basic)
+        shell: pwsh
+        run: |
+          $validator = Join-Path $PWD 'build-win/bin/Release/validator.exe'
+          if (-not (Test-Path $validator)) { throw 'Steinberg validator.exe missing' }
+          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
+          if (-not $bundle) { throw 'VST3 bundle missing for validator' }
+          & $validator $bundle.FullName
+          if ($LASTEXITCODE -ne 0) { throw "VST3 validator failed (exit $LASTEXITCODE)" }
       - name: Package VST3 candidate
         shell: pwsh
         run: |
