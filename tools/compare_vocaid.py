@@ -171,7 +171,7 @@ def selftest(renderer):
         float_src=src+extra
         pcm=struct.pack("<"+"f"*len(src),*src)
         wavfmt=struct.pack("<HHIIHH",3,2,sr,sr*8,8,32)
-        junk=b"temporary demo" + b"\x00"
+        junk=b"temporary demo"  # 14-byte even RIFF chunk
         form=b"WAVE"+b"JUNK"+struct.pack("<I",len(junk))+junk+b"fmt "+struct.pack("<I",len(wavfmt))+wavfmt+b"data"+struct.pack("<I",len(pcm))+pcm
         (a/"dryfloat.wav").write_bytes(b"RIFF"+struct.pack("<I",len(form))+form)
         extended=render(renderer,sr,.5,.5,1.0,1.0,float_src)
