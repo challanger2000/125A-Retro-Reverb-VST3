@@ -15,6 +15,10 @@ jobs:
       - name: Build with pinned SDK
         shell: cmd
         run: call build_windows.bat
+      - name: Offline A/B WAV pipeline self-test
+        shell: pwsh
+        run: |
+          python tools/compare_vocaid.py --renderer build-win/Release/vocaid_ab_renderer.exe --selftest
       - name: Steinberg VST3 Validator (basic)
         shell: pwsh
         run: |

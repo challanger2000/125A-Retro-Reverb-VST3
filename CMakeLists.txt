@@ -21,6 +21,8 @@ add_test(NAME reverb_core_tests COMMAND reverb_tests)
 add_executable(vocaid_reference_tests tests/reference_reverb_tests.cpp)
 target_link_libraries(vocaid_reference_tests PRIVATE vocaid_reference_core)
 add_test(NAME vocaid_reference_tests COMMAND vocaid_reference_tests)
+add_executable(vocaid_ab_renderer tools/vocaid_ab_renderer.cpp)
+target_link_libraries(vocaid_ab_renderer PRIVATE vocaid_reference_core)
 
 option(A125_BUILD_VST3 "Build the native Windows VST3 (Steinberg SDK)" OFF)
 if(A125_BUILD_VST3)
