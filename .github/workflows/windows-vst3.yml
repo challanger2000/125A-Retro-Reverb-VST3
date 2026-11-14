@@ -1,8 +1,12 @@
 name: Windows x64 – native Steinberg VST3 P001
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   build_and_test:
     runs-on: windows-2022
