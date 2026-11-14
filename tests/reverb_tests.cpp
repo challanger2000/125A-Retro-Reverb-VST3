@@ -1,8 +1,9 @@
 #include "revmodel.hpp"
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#define assert(condition) do { if (!(condition)) { std::fprintf(stderr,"TEST FAIL %s:%d: %s\n",__FILE__,__LINE__,#condition); std::abort(); } } while(0)
 #include <vector>
 
 static void testDryAndBypassLaw() {
