@@ -26,3 +26,7 @@ Read [START-HERE.md](START-HERE.md). \`build_windows.bat\` builds the Windows VS
 The offline comparison command in [docs/AUDIO-AB.md](docs/AUDIO-AB.md) tests actual supplied Virtual Vocaid WAVs against the unchanged Jezar Freeverb algorithm at 44.1 kHz, without normalizing away any level mismatch. Klanggleichheit mit Virtual Vocaid ist bis zum erfolgreichen A/B-Vergleich nicht behauptet.
 
 **Current state:** candidate VST3, not a final commercial release; studio/ASIO practical test and GUI remain open.
+
+## P004 — GUI-Wiederverwendung aus Ugly Reverb
+
+Die VSTGUI-Oberfläche verwendet **dieselben bestehenden Klassen** `UglyKnob`, `UglyToggle`, `UglyLogo`, `UglyZoomControl` und denselben 101-Frame-Regler-Spritesheet samt HiDPI-Buildskript aus [125A-Ugly-Reverb-Final](https://github.com/challanger2000/125A-Ugly-Reverb-Final), gepinnt auf Commit `631c79b5fddfb19b916d927f0918134576a3a031`. Es werden **keine eigenen Regler** neu entwickelt. Das reduzierte Layout ist 650 × 298 px groß, mit Size, Damping, Width, Mix, Enable und den vorhandenen numerischen Anzeigen. Nur das kompakte Frontplattenlayout ist neu. Der Freeverb-DSP bleibt unverändert; Ugly Reverb DSP wird nicht eingebunden.

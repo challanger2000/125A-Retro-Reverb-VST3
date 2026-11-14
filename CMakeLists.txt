@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(A125_Retro_Reverb VERSION 0.2.0 LANGUAGES CXX)
+project(A125_Retro_Reverb VERSION 0.3.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -43,15 +43,78 @@ if(A125_BUILD_VST3)
   endif()
   set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF CACHE BOOL "" FORCE)
-  set(SMTG_ENABLE_VSTGUI_SUPPORT OFF CACHE BOOL "" FORCE)
+  set(SMTG_ENABLE_VSTGUI_SUPPORT ON CACHE BOOL "" FORCE)
   set(SMTG_CREATE_PLUGIN_LINK OFF CACHE BOOL "" FORCE)
   add_subdirectory(external/vst3sdk "${CMAKE_BINARY_DIR}/vst3sdk")
+
+  # Pin and reuse the working Ugly Reverb GUI. The original source is
+  # compiled as a control library, NEVER as another audio plugin.
+  set(UGLY_GUI_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/ugly-gui")
+  if(NOT EXISTS "${UGLY_GUI_ROOT}/source/UglyControls.cpp"
+     OR NOT EXISTS "${UGLY_GUI_ROOT}/resource/fender_amp1.png")
+    message(FATAL_ERROR "Run build_windows.bat to fetch the pinned Ugly Reverb GUI")
+  endif()
+  file(READ "${UGLY_GUI_ROOT}/resource/125A_Logo_Master_FINAL.svg" UGLY_BRANDING_SVG)
+  string(REGEX MATCHALL "<path d=\\\"[^\\\"]+\\\" fill=\\\"#[0-9A-Fa-f]+\\\"/>"
+         UGLY_BRANDING_PATH_TAGS "${UGLY_BRANDING_SVG}")
+  list(LENGTH UGLY_BRANDING_PATH_TAGS UGLY_BRANDING_PATH_COUNT)
+  if(NOT UGLY_BRANDING_PATH_COUNT EQUAL 30)
+    message(FATAL_ERROR "125A logo source unexpectedly changed")
+  endif()
+  set(UGLY_BRANDING_PATHS "")
+  foreach(TAG IN LISTS UGLY_BRANDING_PATH_TAGS)
+    if(NOT TAG MATCHES "^<path d=\\\"([^\\\"]+)\\\" fill=\\\"([^\\\"]+)\\\"/>$")
+      message(FATAL_ERROR "Cannot parse original branding")
+    endif()
+    set(UGLY_BRANDING_D "${CMAKE_MATCH_1}")
+    if("${CMAKE_MATCH_2}" STREQUAL "#D71920")
+      set(UGLY_BRANDING_RED "true")
+    elseif("${CMAKE_MATCH_2}" STREQUAL "#D9D9D9")
+      set(UGLY_BRANDING_RED "false")
+    else()
+      message(FATAL_ERROR "Unexpected 125A logo color")
+    endif()
+    string(APPEND UGLY_BRANDING_PATHS "    {\"${UGLY_BRANDING_D}\", ${UGLY_BRANDING_RED}},\n")
+  endforeach()
+  configure_file("${UGLY_GUI_ROOT}/source/branding_master.h.in"
+                 "${CMAKE_BINARY_DIR}/branding_master.h" @ONLY)
+
+  find_package(Python3 COMPONENTS Interpreter REQUIRED)
+  set(RETRO_GUI_GENERATED "${CMAKE_BINARY_DIR}/retro_gui_resources")
+  file(MAKE_DIRECTORY "${RETRO_GUI_GENERATED}")
+  execute_process(
+    COMMAND "${Python3_EXECUTABLE}" "${UGLY_GUI_ROOT}/scripts/generate_knob_strips.py"
+            "${UGLY_GUI_ROOT}/resource/fender_amp1.png"
+            "${RETRO_GUI_GENERATED}"
+    RESULT_VARIABLE RETRO_GUI_RESULT
+    OUTPUT_VARIABLE RETRO_GUI_LOG
+    ERROR_VARIABLE RETRO_GUI_ERROR)
+  if(NOT RETRO_GUI_RESULT EQUAL 0)
+    message(FATAL_ERROR "Original Ugly Reverb knob generation failed: ${RETRO_GUI_ERROR}")
+  endif()
+  message(STATUS "${RETRO_GUI_LOG}")
   smtg_add_vst3plugin(A125_Retro_Reverb
     external/vst3sdk/public.sdk/source/vst/vstsinglecomponenteffect.cpp
     plugin/retro_processor.cpp
     plugin/retro_processor.hpp
-    plugin/factory.cpp)
-  target_include_directories(A125_Retro_Reverb PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-  target_link_libraries(A125_Retro_Reverb PRIVATE sdk freeverb_core)
+    plugin/retro_gui.cpp
+    plugin/factory.cpp
+    resource/retro_reverb.uidesc
+    "${UGLY_GUI_ROOT}/source/UglyControls.cpp"
+    "${UGLY_GUI_ROOT}/source/UglyControls.h")
+  target_include_directories(A125_Retro_Reverb PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${UGLY_GUI_ROOT}/source"
+    "${CMAKE_BINARY_DIR}")
+  target_link_libraries(A125_Retro_Reverb PRIVATE sdk freeverb_core vstgui_support)
+  smtg_target_add_plugin_resources(A125_Retro_Reverb
+    RESOURCES
+      resource/retro_reverb.uidesc
+      "${RETRO_GUI_GENERATED}/ugly_knob_62.png"
+      "${RETRO_GUI_GENERATED}/ugly_knob_62#2.0x.png"
+      "${RETRO_GUI_GENERATED}/ugly_knob_64.png"
+      "${RETRO_GUI_GENERATED}/ugly_knob_64#2.0x.png"
+      "${RETRO_GUI_GENERATED}/ugly_knob_66.png"
+      "${RETRO_GUI_GENERATED}/ugly_knob_66#2.0x.png")
   target_compile_features(A125_Retro_Reverb PRIVATE cxx_std_23)
 endif()
