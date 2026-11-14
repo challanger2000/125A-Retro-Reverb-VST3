@@ -29,6 +29,7 @@ if(A125_BUILD_VST3)
   set(SMTG_CREATE_PLUGIN_LINK OFF CACHE BOOL "" FORCE)
   add_subdirectory(external/vst3sdk "${CMAKE_BINARY_DIR}/vst3sdk")
   smtg_add_vst3plugin(A125_Retro_Reverb
+    external/vst3sdk/public.sdk/source/vst/vstsinglecomponenteffect.cpp
     plugin/retro_processor.cpp
     plugin/retro_processor.hpp
     plugin/factory.cpp)

@@ -18,6 +18,8 @@ public:
   Steinberg::tresult PLUGIN_API canProcessSampleSize(Steinberg::int32 symbolicSampleSize) override;
   Steinberg::tresult PLUGIN_API setActive(Steinberg::TBool state) override;
   Steinberg::tresult PLUGIN_API process(Steinberg::Vst::ProcessData& data) override;
+  Steinberg::tresult PLUGIN_API getEditorState(Steinberg::IBStream* stream) override;
+  Steinberg::tresult PLUGIN_API setEditorState(Steinberg::IBStream* stream) override;
   Steinberg::tresult PLUGIN_API getState(Steinberg::IBStream* stream) override;
   Steinberg::tresult PLUGIN_API setState(Steinberg::IBStream* stream) override;
 private:

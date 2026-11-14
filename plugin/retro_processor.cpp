@@ -90,6 +90,15 @@ tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
   return kResultOk;
 }
 
+tresult PLUGIN_API RetroProcessor::getEditorState(IBStream*) {
+  // P001 exposes only host-provided generic controls; there is no custom editor state.
+  return kResultOk;
+}
+
+tresult PLUGIN_API RetroProcessor::setEditorState(IBStream*) {
+  return kResultOk;
+}
+
 tresult PLUGIN_API RetroProcessor::getState(IBStream* stream) {
   if(!stream) return kInvalidArgument;
   IBStreamer s(stream,kLittleEndian);
