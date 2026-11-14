@@ -23,10 +23,16 @@ tresult PLUGIN_API RetroProcessor::initialize(FUnknown* context) {
   addAudioInput(STR16("Stereo In"),SpeakerArr::kStereo);
   addAudioOutput(STR16("Stereo Out"),SpeakerArr::kStereo);
   parameters.addParameter(STR16("Enable"),nullptr,1,enabled_,ParameterInfo::kCanAutomate,kEnable);
-  parameters.addParameter(STR16("Size"),nullptr,0,size_,ParameterInfo::kCanAutomate,kSize);
-  parameters.addParameter(STR16("Damping"),nullptr,0,damping_,ParameterInfo::kCanAutomate,kDamping);
-  parameters.addParameter(STR16("Width"),nullptr,0,width_,ParameterInfo::kCanAutomate,kWidth);
-  parameters.addParameter(STR16("Mix"),nullptr,0,mix_,ParameterInfo::kCanAutomate,kMix);
+  // Reuse Ugly Reverb's CTextEdit-based percentage displays.
+  auto addPercent=[&](const TChar* label,ParamID id,float initial) {
+    auto* p=new RangeParameter(label,id,STR16("%"),0.0,100.0,initial*100.0);
+    p->setPrecision(0);
+    parameters.addParameter(p);
+  };
+  addPercent(STR16("Size"),kSize,size_);
+  addPercent(STR16("Damping"),kDamping,damping_);
+  addPercent(STR16("Width"),kWidth,width_);
+  addPercent(STR16("Mix"),kMix,mix_);
   apply();
   return kResultOk;
 }
@@ -155,7 +161,6 @@ tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
   return kResultOk;
 }
 
-tresult PLUGIN_API RetroProcessor::getEditorState(IBStream*) {return kResultOk;}
 tresult PLUGIN_API RetroProcessor::setEditorState(IBStream*) {return kResultOk;}
 
 tresult PLUGIN_API RetroProcessor::getState(IBStream* stream) {
