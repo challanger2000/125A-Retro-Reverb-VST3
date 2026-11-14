@@ -30,6 +30,7 @@ target_include_directories(juce_616_differential_tests PRIVATE "${CMAKE_CURRENT_
 target_link_libraries(juce_616_differential_tests PRIVATE vocaid_reference_core)
 add_test(NAME juce_616_differential_tests COMMAND juce_616_differential_tests)
 add_executable(vocaid_ab_renderer tools/vocaid_ab_renderer.cpp)
+target_include_directories(vocaid_ab_renderer PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(vocaid_ab_renderer PRIVATE freeverb_core)
 
 option(A125_BUILD_VST3 "Build the native Windows VST3 (Steinberg SDK)" OFF)
