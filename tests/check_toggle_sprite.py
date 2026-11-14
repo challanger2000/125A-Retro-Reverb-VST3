@@ -22,18 +22,23 @@ def check(sprite: pathlib.Path, layout: pathlib.Path, gui: pathlib.Path, cmake: 
     assert (width, height) == (125, 250), (width, height)
     assert depth == 8 and color_type == 3, "expected 8-bit indexed image"
     assert b"tRNS" in raw, "transparent background missing"
-    assert hashlib.sha256(raw).hexdigest() == SHA256, "ON/OFF order or artwork changed"
+    assert hashlib.sha256(raw).hexdigest() == SHA256, "Invalid/corrupt sprite or changed OFF/ON frame order"
     root = ET.parse(layout).getroot()
     controls = [v for v in root.iter("view") if v.get("custom-view-name") == "Enable"]
     assert len(controls) == 1 and controls[0].get("size") == "125, 125", controls
     assert controls[0].get("origin") == "787, 201", controls[0].attrib
+    labels = {v.get("title"): v for v in root.iter("view") if v.get("class") == "CTextLabel"}
+    assert "ON" in labels and "OFF" in labels, "physical switch ON/OFF labels missing"
+    assert labels["ON"].get("origin") == "819, 195" and labels["OFF"].get("origin") == "819, 324"
+    assert labels["ON"].get("mouse-enabled") == "false" and labels["OFF"].get("mouse-enabled") == "false"
+    assert labels["FREEVERB"].get("origin") == "789, 358", "bottom label would collide with OFF"
     code = gui.read_text(encoding="utf-8")
     assert 'VSTGUI::COnOffButton(r,editor,kEnable,bitmap)' in code
     assert 'CResourceDescription("retro_lever_off_on_125.png")' in code
     assert "RetroSilverToggle" not in code
     build = cmake.read_text(encoding="utf-8")
     assert "resource/retro_lever_off_on_125.png" in build
-    print("PASS: 125x250 alpha PNG, OFF/ON sprite order, full-size VSTGUI control and resource")
+    print("PASS: exact, valid 125x250 alpha OFF/ON sprite, native VSTGUI click control, ON-top/OFF-bottom labels")
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()

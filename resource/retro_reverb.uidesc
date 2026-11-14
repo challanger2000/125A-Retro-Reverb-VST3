@@ -36,7 +36,10 @@
 
     <view class="CTextLabel" origin="794, 167" size="110, 24" title="Enable" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
     <view class="CView" custom-view-name="Enable" origin="787, 201" size="125, 125"/>
-    <view class="CTextLabel" origin="789, 330" size="120, 24" title="FREEVERB" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
+    <!-- Lever up = ON; lever down = OFF. Text is outside the artwork and never intercepts mouse events. -->
+    <view class="CTextLabel" origin="819, 195" size="60, 18" title="ON" mouse-enabled="false" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="819, 324" size="60, 18" title="OFF" mouse-enabled="false" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="789, 358" size="120, 22" title="FREEVERB" mouse-enabled="false" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
   </template>
   <control-tags>
     <control-tag name="Enable" tag="100"/>
