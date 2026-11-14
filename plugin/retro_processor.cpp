@@ -5,7 +5,6 @@
 #include "base/source/fstreamer.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 #include "pluginterfaces/base/ibstream.h"
-#include "pluginterfaces/vst/ivstspeaker.h"
 
 namespace a125 {
 using namespace Steinberg;
