@@ -94,6 +94,7 @@ if(A125_BUILD_VST3)
   endif()
   message(STATUS "${RETRO_GUI_LOG}")
   smtg_add_vst3plugin(A125_Retro_Reverb
+    external/vst3sdk/public.sdk/source/main/dllmain.cpp
     external/vst3sdk/public.sdk/source/vst/vstsinglecomponenteffect.cpp
     plugin/retro_processor.cpp
     plugin/retro_processor.hpp

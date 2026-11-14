@@ -161,7 +161,6 @@ tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
   return kResultOk;
 }
 
-tresult PLUGIN_API RetroProcessor::setEditorState(IBStream*) {return kResultOk;}
 
 tresult PLUGIN_API RetroProcessor::getState(IBStream* stream) {
   if(!stream)return kInvalidArgument;
