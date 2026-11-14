@@ -147,7 +147,8 @@ if(A125_BUILD_VST3)
     tests/retro_native_processor_tests.cpp
     plugin/retro_processor.cpp
     external/vst3sdk/public.sdk/source/vst/vstsinglecomponenteffect.cpp
-    external/vst3sdk/public.sdk/source/vst/hosting/parameterchanges.cpp)
+    external/vst3sdk/public.sdk/source/vst/hosting/parameterchanges.cpp
+    external/vst3sdk/public.sdk/source/common/memorystream.cpp)
   target_include_directories(retro_native_processor_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
   target_link_libraries(retro_native_processor_tests PRIVATE sdk freeverb_core vstgui_support)
   target_compile_features(retro_native_processor_tests PRIVATE cxx_std_23)
