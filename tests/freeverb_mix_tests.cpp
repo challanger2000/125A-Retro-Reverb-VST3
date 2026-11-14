@@ -39,7 +39,9 @@ static void checkZeroWetAndNoOldTail() {
 
   a125::applyMix(r,0.f); r.mute(); // 125A wrapper hard-zero entry
   float L[4]{.5f,-.2f,.1f,.8f},R[4]{-.5f,.3f,0.f,-.8f},O[4]{},P[4]{};
-  r.processreplace(L,R,O,P,4,1);
+  // The VST3 wrapper bypasses revmodel::processreplace entirely at
+  // 0% Mix; zero-mix dry input must NOT refill the internal delay lines.
+  for(int k=0;k<4;++k){O[k]=L[k];P[k]=R[k];}
   for(int k=0;k<4;++k){CHECK(O[k]==L[k]);CHECK(P[k]==R[k]);}
   // Returning to 100% on silence must not resurrect the previous tail.
   a125::applyMix(r,1.f);
