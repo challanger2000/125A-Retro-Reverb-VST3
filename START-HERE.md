@@ -8,7 +8,7 @@ This branch builds a native **Windows x64 VST3** powered by Jezar's original Fre
 build_windows.bat
 \`\`\`
 
-This checks out the pinned Steinberg VST3 SDK 3.8.1, builds \`A125_Retro_Reverb\`, runs the original Freeverb tests, Mix-law tests and source-research comparisons, then CTest.
+This checks out the pinned Steinberg VST3 SDK 3.8.1, builds \`125A_Retro_Reverb\`, runs the original Freeverb tests, Mix-law tests and source-research comparisons, then CTest.
 
 ## Automated CI gates
 

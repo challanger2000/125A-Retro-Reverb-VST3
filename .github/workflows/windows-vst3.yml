@@ -29,20 +29,23 @@ jobs:
         run: |
           $validator = Join-Path $PWD 'build-win/bin/Release/validator.exe'
           if (-not (Test-Path $validator)) { throw 'Steinberg validator.exe missing' }
-          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
+          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*125A*' } | Select-Object -First 1
           if (-not $bundle) { throw 'VST3 bundle missing for validator' }
+          if ($bundle.Name -ne '125A_Retro_Reverb.vst3') { throw "Unexpected VST3 bundle name: $($bundle.Name)" }
+          if (Get-ChildItem build-win -Recurse -Directory -Filter 'A125_Retro_Reverb.vst3') { throw 'Obsolete A125 bundle name was generated' }
           & $validator $bundle.FullName
           if ($LASTEXITCODE -ne 0) { throw "VST3 validator failed (exit $LASTEXITCODE)" }
       - name: Package VST3 candidate
         shell: pwsh
         run: |
-          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
+          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*125A*' } | Select-Object -First 1
           if (-not $bundle) { throw 'Windows VST3 bundle missing' }
-          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P004-UglyGUI-Windows-x64.zip -Force
+          if ($bundle.Name -ne '125A_Retro_Reverb.vst3') { throw "Unexpected VST3 package folder: $($bundle.Name)" }
+          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P004-Correct-125A-Name-Windows-x64.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: 125A-Retro-Reverb-P004-UglyGUI-Windows-x64-VST3-CANDIDATE
-          path: 125A-Retro-Reverb-P004-UglyGUI-Windows-x64.zip
+          name: 125A-Retro-Reverb-P004-Correct-125A-Name-Windows-x64-VST3
+          path: 125A-Retro-Reverb-P004-Correct-125A-Name-Windows-x64.zip
           if-no-files-found: error
       - name: Checkout independent 125A Plugin Test Lab (pinned)
         uses: actions/checkout@v4
@@ -62,7 +65,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $bundle = @(Get-ChildItem build-win -Recurse -Directory -Filter 'A125_Retro_Reverb.vst3' | Select-Object -First 1)
+          $bundle = @(Get-ChildItem build-win -Recurse -Directory -Filter '125A_Retro_Reverb.vst3' | Select-Object -First 1)
           $gui = @(Get-ChildItem build-test-lab -Recurse -File -Filter '125A_Test_Lab_GUI.exe' | Select-Object -First 1)
           $audio = @(Get-ChildItem build-test-lab -Recurse -File -Filter '125A_Test_Lab_Host.exe' | Select-Object -First 1)
           $stress = @(Get-ChildItem build-test-lab -Recurse -File -Filter '125A_Test_Lab_State_Stress.exe' | Select-Object -First 1)

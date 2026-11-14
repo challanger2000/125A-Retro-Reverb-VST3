@@ -17,7 +17,7 @@ Stereo → Stereo (the original Freeverb stereo algorithm), Mono → Stereo (dup
 - **Original Freeverb fixed sample-delay lengths** assume 44.1 kHz. This port does **not** alter the delays at 48 or 96 kHz; higher-rate decay time will therefore be shorter in seconds. This is a conscious 1:1-source decision, not a bug fix or alternative reverb model.
 - Freeverb's original Wet scale (3), Damping scale (0.4), Room size scale (0.28) and offset (0.7) remain intact.
 - Minimal compiler compatibility and defined reset/constructor-state corrections are documented in [THIRD_PARTY.md](THIRD_PARTY.md); the musical filter-processing equations are unchanged.
-- No custom GUI yet: host generic parameters are available.
+- Native P004 VSTGUI with the reused Ugly Reverb hardware controls, plus host parameter automation.
 
 ## Build and tests
 
@@ -25,8 +25,12 @@ Read [START-HERE.md](START-HERE.md). \`build_windows.bat\` builds the Windows VS
 
 The offline comparison command in [docs/AUDIO-AB.md](docs/AUDIO-AB.md) tests actual supplied Virtual Vocaid WAVs against the unchanged Jezar Freeverb algorithm at 44.1 kHz, without normalizing away any level mismatch. Klanggleichheit mit Virtual Vocaid ist bis zum erfolgreichen A/B-Vergleich nicht behauptet.
 
-**Current state:** candidate VST3, not a final commercial release; studio/ASIO practical test and GUI remain open.
+**Current state:** candidate VST3, not a final commercial release; studio/ASIO practical test and final GUI acceptance remain open.
 
 ## P004 — GUI-Wiederverwendung aus Ugly Reverb
 
 Die VSTGUI-Oberfläche verwendet **dieselben bestehenden Klassen** `UglyKnob`, `UglyToggle`, `UglyLogo`, `UglyZoomControl` und denselben 101-Frame-Regler-Spritesheet samt HiDPI-Buildskript aus [125A-Ugly-Reverb-Final](https://github.com/challanger2000/125A-Ugly-Reverb-Final), gepinnt auf Commit `631c79b5fddfb19b916d927f0918134576a3a031`. Es werden **keine eigenen Regler** neu entwickelt. Das reduzierte Layout ist 650 × 298 px groß, mit Size, Damping, Width, Mix, Enable und den vorhandenen numerischen Anzeigen. Nur das kompakte Frontplattenlayout ist neu. Der Freeverb-DSP bleibt unverändert; Ugly Reverb DSP wird nicht eingebunden.
+
+## Bundle naming
+
+The installed plugin bundle is **`125A_Retro_Reverb.vst3`**. Remove any obsolete `A125_Retro_Reverb.vst3` bundle from previous P004/P003 test installs before installing the renamed build. The VST3 plugin class UID and state format are unchanged.
