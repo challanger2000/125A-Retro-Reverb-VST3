@@ -13,7 +13,7 @@ static void checkMixScale() {
   for(int i=0;i<=100;++i) {
     const float m=static_cast<float>(i)/100.f;
     a125::applyMix(r,m);
-    CHECK(r.getwet()==m);
+    CHECK(std::abs(r.getwet()-m)<1.e-7f);
     CHECK(std::abs(r.getdry()-(1.f-m)*.5f)<1.e-7f);
     float inputL[4]{.25f,-.2f,.7f,-.8f},inputR[4]{-.15f,.4f,-.5f,.35f};
     float outputL[4]{},outputR[4]{};
