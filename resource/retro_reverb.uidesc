@@ -14,8 +14,6 @@
     <view class="CView" custom-view-name="BrandLogo" origin="26, 15" size="124, 62" mouse-enabled="false"/>
     <view class="CTextLabel" origin="283, 20" size="370, 32" title="125A RETRO REVERB" transparent="true" back-color="Background" font="~ NormalFontBig" font-color="Text" frame-width="0" text-alignment="center"/>
     <view class="CTextLabel" origin="282, 53" size="370, 17" title="ORIGINAL FREEVERB / 2000" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
-    <view class="CTextLabel" origin="792, 30" size="43, 20" title="GUI" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="right"/>
-    <view class="CView" custom-view-name="GuiZoom" origin="840, 24" size="70, 30"/>
     <view class="CTextLabel" origin="800, 121" size="100, 24" title="MASTER" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
 
     <view class="CTextLabel" origin="56, 143" size="125, 24" title="Size" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>

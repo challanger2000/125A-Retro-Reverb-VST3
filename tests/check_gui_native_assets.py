@@ -11,7 +11,7 @@ import pathlib
 import sys
 import xml.etree.ElementTree as ET
 
-def check(master,strip,script,layout):
+def check(master,strip,script,layout,gui,processor):
     spec=importlib.util.spec_from_file_location("original_ugly_generator",str(script))
     mod=importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -38,7 +38,17 @@ def check(master,strip,script,layout):
     assert not any(node.attrib.get("title")=="REVERB ENGINE" for node in desc.iter("view"))
     toggles=[node for node in desc.iter("view") if node.attrib.get("custom-view-name")=="Enable"]
     assert len(toggles)==1
-    print("PASS 101 original 125px master frames: pixel-exact at 6 sample frames; 930x410 layout, 4 large knobs, no Reverb Engine label")
+    assert not any(v.get("custom-view-name")=="GuiZoom" for v in desc.iter("view"))
+    assert not any(v.get("title")=="GUI" for v in desc.iter("view"))
+    gui_source=gui.read_text(encoding="utf-8")
+    processor_source=processor.read_text(encoding="utf-8")
+    assert 'setAllowedZoomFactors({1.})' in gui_source, "editor must only allow 100% zoom"
+    assert gui_source.count('setZoomFactor(1.)')>=3, "open and legacy state must force normal size"
+    assert 'UglyZoomControl' not in gui_source and 'guiZoomIndex_' not in gui_source
+    assert 'guiZoomIndex_' not in processor_source, "obsolete zoom state member present"
+    assert 's.writeInt32(kGuiMagic)&&s.writeInt32(0)' in gui_source, "legacy editor state must remain compatible at 100%"
+    assert 'magic==kGuiMagic' in gui_source and 'legacyZoom' in gui_source, "old DAW project GUI state must be accepted"
+    print("PASS original 125px master frames, 4 normal-size knobs, no Zoom UI, locked 100% and legacy editor state")
 
 def main():
     p=argparse.ArgumentParser()
@@ -46,8 +56,10 @@ def main():
     p.add_argument("--strip",type=pathlib.Path,required=True)
     p.add_argument("--generator",type=pathlib.Path,required=True)
     p.add_argument("--layout",type=pathlib.Path,required=True)
+    p.add_argument("--gui",type=pathlib.Path,required=True)
+    p.add_argument("--processor",type=pathlib.Path,required=True)
     a=p.parse_args()
-    check(a.master,a.strip,a.generator,a.layout)
+    check(a.master,a.strip,a.generator,a.layout,a.gui,a.processor)
 
 if __name__=="__main__":
     main()

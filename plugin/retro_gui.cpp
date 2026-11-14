@@ -9,7 +9,6 @@
 #include "vstgui/plugin-bindings/vst3editor.h"
 #include "base/source/fstring.h"
 #include "base/source/fstreamer.h"
-#include <algorithm>
 #include <cstring>
 namespace a125 {
 using namespace Steinberg;
@@ -47,21 +46,21 @@ public:
     setDirty(false);
   }
 };
-constexpr double kZoom[]={1.,1.25,1.5,1.75,2.};
 constexpr int32 kGuiMagic=0x315A5252;
 }
 Steinberg::IPlugView* PLUGIN_API RetroProcessor::createView(const char* name) {
   if(name && ConstString(name)==Steinberg::Vst::ViewType::kEditor) {
     auto* e=new VSTGUI::VST3Editor(this,"view","retro_reverb.uidesc");
-    e->setAllowedZoomFactors({1.,1.25,1.5,1.75,2.});
-    e->setZoomFactor(kZoom[std::clamp(guiZoomIndex_,0,4)]);
+    // Fixed native 930x410 GUI: never request scaled bitmap rendering.
+    e->setAllowedZoomFactors({1.});
+    e->setZoomFactor(1.);
     return e;
   }
   return nullptr;
 }
 void RetroProcessor::didOpen(VSTGUI::VST3Editor* editor) {
   openEditor_=editor;
-  if(editor)editor->setZoomFactor(kZoom[std::clamp(guiZoomIndex_,0,4)]);
+  if(editor)editor->setZoomFactor(1.);
 }
 void RetroProcessor::willClose(VSTGUI::VST3Editor* editor) {
   if(openEditor_==editor)openEditor_=nullptr;
@@ -75,7 +74,6 @@ VSTGUI::CView* RetroProcessor::createCustomView(VSTGUI::UTF8StringPtr name,
   VSTGUI::CRect r(p.x,p.y,p.x+s.x,p.y+s.y);
   if(std::strcmp(name,"RetroFaceplate")==0)return new RetroFaceplate(r);
   if(std::strcmp(name,"BrandLogo")==0)return new UglyReverb::UglyLogo(r);
-  if(std::strcmp(name,"GuiZoom")==0)return new UglyReverb::UglyZoomControl(r,editor,&guiZoomIndex_);
   if(std::strcmp(name,"Size")==0)return new UglyReverb::UglyKnob(r,editor,kSize);
   if(std::strcmp(name,"Damping")==0)return new UglyReverb::UglyKnob(r,editor,kDamping);
   if(std::strcmp(name,"Width")==0)return new UglyReverb::UglyKnob(r,editor,kWidth);
@@ -96,16 +94,18 @@ VSTGUI::CView* RetroProcessor::createCustomView(VSTGUI::UTF8StringPtr name,
 tresult PLUGIN_API RetroProcessor::getEditorState(IBStream* stream) {
   if(!stream)return kInvalidArgument;
   IBStreamer s(stream,kLittleEndian);
-  return s.writeInt32(kGuiMagic)&&s.writeInt32(guiZoomIndex_)?kResultOk:kResultFalse;
+  // Preserve the historical two-int GUI state layout; zoom is always 100%.
+  return s.writeInt32(kGuiMagic)&&s.writeInt32(0)?kResultOk:kResultFalse;
 }
 tresult PLUGIN_API RetroProcessor::setEditorState(IBStream* stream) {
   if(!stream)return kInvalidArgument;
-  IBStreamer s(stream,kLittleEndian);int32 magic=0,index=0;
-  if(!s.readInt32(magic)||magic!=kGuiMagic||!s.readInt32(index)){
-    guiZoomIndex_=0;return kResultOk;
+  // Accept historical GUI state, but deliberately ignore its saved zoom.
+  IBStreamer s(stream,kLittleEndian);
+  int32 magic=0,legacyZoom=0;
+  if(s.readInt32(magic)&&magic==kGuiMagic) {
+    s.readInt32(legacyZoom);
   }
-  guiZoomIndex_=std::clamp(static_cast<int>(index),0,4);
-  if(openEditor_)openEditor_->setZoomFactor(kZoom[guiZoomIndex_]);
+  if(openEditor_)openEditor_->setZoomFactor(1.);
   return kResultOk;
 }
 } // namespace a125

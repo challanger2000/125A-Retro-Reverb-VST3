@@ -45,7 +45,6 @@ private:
   float mix_=1.f/3.f;  // Jezar's initial wet (original had separate dry=0)
   double sampleRate_=44100.0; // VST host accounting only, NOT a DSP retuning
   revmodel model_;
-  int guiZoomIndex_=0;
   VSTGUI::VST3Editor* openEditor_=nullptr;
 };
 } // namespace a125
