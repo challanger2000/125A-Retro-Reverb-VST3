@@ -55,7 +55,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: 125A-Retro-Reverb-P0044-NoZoom-Windows-x64-VST3
-          path: 125A-Retro-Reverb-P0043-MetalLever-Windows-x64.zip
+          path: 125A-Retro-Reverb-P0044-NoZoom-Windows-x64.zip
           if-no-files-found: error
       - name: Checkout independent 125A Plugin Test Lab (pinned)
         uses: actions/checkout@v4
