@@ -24,3 +24,9 @@ The binary fingerprint of the user-supplied Virtual Vocaid remains a guide; the 
 ## Licenses
 
 Jezar's original source explicitly declares public domain. The independently written wrapper is intended for use under the repository's future project license. Steinberg VST3 SDK 3.8.1 is MIT licensed and must be obtained separately. See [THIRD_PARTY.md](THIRD_PARTY.md).
+
+## P002 – Virtual Vocaid reference-mode engine
+
+The actual VST3 effect now uses `src/reference_reverb.hpp`, a standalone C++23 implementation of the **JUCE 6.1.6-style** Freeverb network identified in the original Vocaid binary. It includes 44.1/48/96k sample-rate scaling, 10 ms parameter smoothing, Stereo/Stereo and Mono/Mono or Mono/Stereo routing, and no audio callback heap allocations. The historical Jezar Freeverb remains in `third_party` as a reference but is **not** the active VST3 DSP.
+
+The comparison is **architectural/static**, not yet a verified 1:1 audio reproduction. See `docs/REFERENCE-DSP.md` for evidence and remaining audio A/B gate.

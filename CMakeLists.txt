@@ -41,6 +41,6 @@ if(A125_BUILD_VST3)
     plugin/retro_processor.hpp
     plugin/factory.cpp)
   target_include_directories(A125_Retro_Reverb PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-  target_link_libraries(A125_Retro_Reverb PRIVATE sdk freeverb_core)
+  target_link_libraries(A125_Retro_Reverb PRIVATE sdk vocaid_reference_core)
   target_compile_features(A125_Retro_Reverb PRIVATE cxx_std_23)
 endif()
