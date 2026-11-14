@@ -35,6 +35,7 @@ public:
       VSTGUI::VST3Editor* editor) override;
   Steinberg::tresult PLUGIN_API setEditorState(Steinberg::IBStream*) override;
   Steinberg::tresult PLUGIN_API getState(Steinberg::IBStream*) override;
+  Steinberg::tresult PLUGIN_API setComponentState(Steinberg::IBStream*) override;
   Steinberg::tresult PLUGIN_API setState(Steinberg::IBStream*) override;
 private:
   void apply() noexcept;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(125A_Retro_Reverb VERSION 0.3.4 LANGUAGES CXX)
+project(125A_Retro_Reverb VERSION 0.3.5 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -140,5 +140,6 @@ if(A125_BUILD_VST3)
       resource/retro_lever_off_on_125.png
       "${RETRO_GUI_GENERATED}/ugly_knob_125.png"
       "${RETRO_GUI_GENERATED}/ugly_knob_125#2.0x.png")
+  target_compile_definitions(125A_Retro_Reverb PRIVATE A125_PLUGIN_VERSION="${PROJECT_VERSION}")
   target_compile_features(125A_Retro_Reverb PRIVATE cxx_std_23)
 endif()

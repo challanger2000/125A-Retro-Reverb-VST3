@@ -22,7 +22,15 @@ tresult PLUGIN_API RetroProcessor::initialize(FUnknown* context) {
   if(result!=kResultOk) return result;
   addAudioInput(STR16("Stereo In"),SpeakerArr::kStereo);
   addAudioOutput(STR16("Stereo Out"),SpeakerArr::kStereo);
-  parameters.addParameter(STR16("Enable"),nullptr,1,enabled_,ParameterInfo::kCanAutomate,kEnable);
+  // The generic numeric toggle cannot parse its displayed "On" back to 1.
+  // Keep toggle metadata (stepCount=1, kCanAutomate) with an exact text oracle.
+  auto* enable=new StringListParameter(STR16("Enable"),kEnable,nullptr,
+                                       ParameterInfo::kCanAutomate);
+  enable->appendString(STR16("Off"));
+  enable->appendString(STR16("On"));
+  enable->getInfo().defaultNormalizedValue=enabled_;
+  enable->setNormalized(enabled_);
+  parameters.addParameter(enable);
   // Reuse Ugly Reverb's CTextEdit-based percentage displays.
   auto addPercent=[&](const TChar* label,ParamID id,float initial) {
     auto* p=new RangeParameter(label,id,STR16("%"),0.0,100.0,initial*100.0);
@@ -89,78 +97,159 @@ uint32 PLUGIN_API RetroProcessor::getTailSamples() {
 }
 
 tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
+  // A parameter queue is ordered in sample offsets. Consume EVERY point,
+  // applying it at its exact frame, rather than grabbing the last point and
+  // applying that value to the entire block.
+  struct Cursor {
+    IParamValueQueue* queue=nullptr;
+    int32 index=0;
+  };
+  std::array<Cursor,5> cursors{};
   if(auto* changes=data.inputParameterChanges) {
     for(int32 i=0;i<changes->getParameterCount();++i) {
       auto* queue=changes->getParameterData(i);
-      if(!queue || queue->getPointCount()<=0) continue;
-      int32 offset=0;ParamValue value=0;
-      if(queue->getPoint(queue->getPointCount()-1,offset,value)!=kResultTrue)continue;
-      const float v=static_cast<float>(std::clamp(value,0.0,1.0));
-      switch(queue->getParameterId()) {
-        case kEnable:enabled_=v>=.5f?1.f:0.f;break;
-        case kSize:size_=v;break;
-        case kDamping:damping_=v;break;
-        case kWidth:width_=v;break;
-        case kMix: {
-          // 0% is a hard "effect off" boundary: discard accumulated wet
-          // samples, never boost the dry path or resurrect a stale tail.
-          if(v==0.f && mix_!=0.f) model_.mute();
-          mix_=v;
-          break;
-        }
-        default:break;
+      if(!queue)continue;
+      const ParamID id=queue->getParameterId();
+      if(id<kEnable || id>kMix)continue;
+      auto& cursor=cursors[id-kEnable];
+      if(!cursor.queue)cursor.queue=queue;
+    }
+  }
+
+  auto applyPoint=[&](ParamID id,ParamValue value) noexcept {
+    if(!std::isfinite(value))return false;
+    const float v=static_cast<float>(std::clamp(value,0.0,1.0));
+    switch(id) {
+      case kEnable: enabled_=v>=.5f?1.f:0.f;return true;
+      case kSize: size_=v;return true;
+      case kDamping: damping_=v;return true;
+      case kWidth: width_=v;return true;
+      case kMix:
+        // Deliberate 125A 0%-Mix rule: discard the wet tail.
+        if(v==0.f && mix_!=0.f)model_.mute();
+        mix_=v;
+        return true;
+      default:return false;
+    }
+  };
+
+  // Steinberg permits parameter flushes without audio buffers or samples.
+  if(data.numSamples<=0 || data.numInputs<1 || data.numOutputs<1) {
+    bool changed=false;
+    for(ParamID id=kEnable;id<=kMix;++id) {
+      auto* q=cursors[id-kEnable].queue;
+      if(!q)continue;
+      for(int32 j=0;j<q->getPointCount();++j) {
+        int32 offset=0;ParamValue value=0;
+        if(q->getPoint(j,offset,value)==kResultTrue && offset>=0)
+          changed|=applyPoint(id,value);
       }
     }
-    apply();
+    if(changed)apply();
+    return kResultOk;
   }
-  if(data.numInputs<1 || data.numOutputs<1 || data.numSamples<=0)return kResultOk;
   if(data.symbolicSampleSize!=kSample32)return kResultFalse;
-  const auto& in=data.inputs[0];auto& out=data.outputs[0];
+  if(!data.inputs || !data.outputs)return kResultFalse;
+  const auto& in=data.inputs[0];
+  auto& out=data.outputs[0];
   const int nIn=in.numChannels,nOut=out.numChannels;
-  if(!((nIn==2 && nOut==2)||(nIn==1 && nOut==1)||(nIn==1 && nOut==2)))return kResultFalse;
+  if(!((nIn==2 && nOut==2)||(nIn==1 && nOut==1)||(nIn==1 && nOut==2)))
+    return kResultFalse;
   if(!in.channelBuffers32 || !out.channelBuffers32 || !out.channelBuffers32[0] ||
      (nOut==2 && !out.channelBuffers32[1]))return kResultFalse;
 
   constexpr int kChunk=256;
-  std::array<float,kChunk> leftIn{},rightIn{},leftOut{},rightOut{};
-  const bool bypass=(enabled_<.5f || mix_==0.f);
-  for(int start=0;start<data.numSamples;start+=kChunk) {
-    const int n=std::min(kChunk,data.numSamples-start);
-    // Host silence flags don't guarantee its input memory is zero-filled.
-    for(int k=0;k<n;++k) {
-      const auto sample=[&](int ch)->float {
-        if((in.silenceFlags&(uint64{1}<<ch)) || !in.channelBuffers32[ch])return 0.f;
-        return in.channelBuffers32[ch][start+k];
-      };
-      leftIn[k]=sample(0);
-      rightIn[k]=nIn==2?sample(1):leftIn[k];
-    }
+  std::array<float,kChunk> leftIn{},rightIn{},leftOut{},rightOut{},zeros{};
 
-    if(bypass) {
-      // Exact original PCM, no 6 dB boost and no hidden wet at Mix=0.
-      for(int k=0;k<n;++k){leftOut[k]=leftIn[k];rightOut[k]=rightIn[k];}
-    } else {
-      // The ONLY reverberation calculations here are Jezar's original
-      // revmodel::processreplace(), with its unmodified filter equations.
-      model_.processreplace(leftIn.data(),rightIn.data(),
-                            leftOut.data(),rightOut.data(),n,1);
+  const auto render=[&](int first,int count) {
+    for(int start=first;start<first+count;start+=kChunk) {
+      const int n=std::min(kChunk,first+count-start);
+      for(int k=0;k<n;++k) {
+        const auto sample=[&](int ch)->float {
+          if((in.silenceFlags&(uint64{1}<<ch)) || !in.channelBuffers32[ch])
+            return 0.f;
+          const float x=in.channelBuffers32[ch][start+k];
+          // A single NaN must never enter Freeverb's recursive delay lines.
+          // Bound pathological but finite host samples to avoid overflow.
+          return std::isfinite(x)?std::clamp(x,-16.f,16.f):0.f;
+        };
+        leftIn[k]=sample(0);
+        rightIn[k]=nIn==2?sample(1):leftIn[k];
+      }
+      if(mix_==0.f) {
+        // The tank was muted at the 0%-Mix boundary: pure unity dry.
+        for(int k=0;k<n;++k) {
+          leftOut[k]=leftIn[k];rightOut[k]=rightIn[k];
+        }
+      } else if(enabled_<.5f) {
+        // Bypass outputs dry audio but advances an existing tail on silence.
+        // No new audio enters the tank; no frozen old tail can reappear.
+        model_.processreplace(zeros.data(),zeros.data(),
+                              leftOut.data(),rightOut.data(),n,1);
+        for(int k=0;k<n;++k) {
+          leftOut[k]=leftIn[k];rightOut[k]=rightIn[k];
+        }
+      } else {
+        // Unchanged original Jezar Freeverb filter processing.
+        model_.processreplace(leftIn.data(),rightIn.data(),
+                              leftOut.data(),rightOut.data(),n,1);
+      }
+      for(int k=0;k<n;++k) {
+        out.channelBuffers32[0][start+k]=leftOut[k];
+        if(nOut==2)out.channelBuffers32[1][start+k]=rightOut[k];
+      }
     }
-    for(int k=0;k<n;++k) {
-      out.channelBuffers32[0][start+k]=leftOut[k];
-      if(nOut==2)out.channelBuffers32[1][start+k]=rightOut[k];
+  };
+
+  int pos=0;
+  while(pos<data.numSamples) {
+    int next=data.numSamples;
+    // Skip malformed/obsolete points and locate the next boundary.
+    for(auto& c:cursors) {
+      if(!c.queue)continue;
+      while(c.index<c.queue->getPointCount()) {
+        int32 offset=0;ParamValue value=0;
+        if(c.queue->getPoint(c.index,offset,value)!=kResultTrue ||
+           offset<pos || offset>=data.numSamples || !std::isfinite(value)) {
+          ++c.index;
+          continue;
+        }
+        next=std::min(next,static_cast<int>(offset));
+        break;
+      }
     }
+    if(next>pos)render(pos,next-pos);
+    pos=next;
+    if(pos==data.numSamples)break;
+    bool changed=false;
+    for(ParamID id=kEnable;id<=kMix;++id) {
+      auto& c=cursors[id-kEnable];
+      if(!c.queue)continue;
+      while(c.index<c.queue->getPointCount()) {
+        int32 offset=0;ParamValue value=0;
+        if(c.queue->getPoint(c.index,offset,value)!=kResultTrue ||
+           offset<pos || offset>=data.numSamples || !std::isfinite(value)) {
+          ++c.index;
+          continue;
+        }
+        if(offset!=pos)break;
+        changed|=applyPoint(id,value);
+        ++c.index;
+      }
+    }
+    if(changed)apply();
   }
 
   out.silenceFlags=0;
   for(int ch=0;ch<nOut;++ch) {
-    bool isSilent=true;
-    for(int k=0;k<data.numSamples;++k)
-      if(out.channelBuffers32[ch][k]!=0.f){isSilent=false;break;}
-    if(isSilent)out.silenceFlags|=uint64{1}<<ch;
+    bool silent=true;
+    for(int k=0;k<data.numSamples;++k) {
+      if(out.channelBuffers32[ch][k]!=0.f) {silent=false;break;}
+    }
+    if(silent)out.silenceFlags|=uint64{1}<<ch;
   }
   return kResultOk;
 }
-
 
 tresult PLUGIN_API RetroProcessor::getState(IBStream* stream) {
   if(!stream)return kInvalidArgument;
@@ -168,6 +257,25 @@ tresult PLUGIN_API RetroProcessor::getState(IBStream* stream) {
   if(!s.writeInt32(0x125A0001))return kResultFalse;
   for(float v:{enabled_,size_,damping_,width_,mix_})
     if(!s.writeFloat(v))return kResultFalse;
+  return kResultOk;
+}
+
+
+tresult PLUGIN_API RetroProcessor::setComponentState(IBStream* stream) {
+  if(!stream)return kInvalidArgument;
+  // Separate controller synchronization during a host preset/project recall.
+  // Do not touch DSP feedback state here: the host invokes setState for that.
+  IBStreamer s(stream,kLittleEndian);
+  int32 version=0;
+  if(!s.readInt32(version) || version!=0x125A0001)return kResultFalse;
+  float values[5]{};
+  for(float& v:values)
+    if(!s.readFloat(v)||!std::isfinite(v))return kResultFalse;
+  setParamNormalized(kEnable,values[0]>=.5f?1.:0.);
+  setParamNormalized(kSize,std::clamp(static_cast<double>(values[1]),0.,1.));
+  setParamNormalized(kDamping,std::clamp(static_cast<double>(values[2]),0.,1.));
+  setParamNormalized(kWidth,std::clamp(static_cast<double>(values[3]),0.,1.));
+  setParamNormalized(kMix,std::clamp(static_cast<double>(values[4]),0.,1.));
   return kResultOk;
 }
 
