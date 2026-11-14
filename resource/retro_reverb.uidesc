@@ -9,30 +9,34 @@
     <color name="DisplayText" rgba="#dce9f3ff"/>
     <color name="Edge" rgba="#31506aff"/>
   </colors>
-  <template background-color="Background" class="CViewContainer" maxSize="650, 298" minSize="650, 298" mouse-enabled="true" name="view" opacity="1" origin="0, 0" size="650, 298" transparent="false">
-    <view class="CView" custom-view-name="RetroFaceplate" origin="0, 0" size="650, 298" mouse-enabled="false"/>
-    <view class="CView" custom-view-name="BrandLogo" origin="16, 10" size="88, 45" mouse-enabled="false"/>
-    <view class="CTextLabel" origin="185, 13" size="280, 26" title="125A RETRO REVERB" transparent="true" back-color="Background" font="~ NormalFontBig" font-color="Text" frame-width="0" text-alignment="center"/>
-    <view class="CTextLabel" origin="185, 40" size="280, 17" title="ORIGINAL FREEVERB / 2000" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
-    <view class="CTextLabel" origin="543, 18" size="42, 20" title="GUI" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="right"/>
-    <view class="CView" custom-view-name="GuiZoom" origin="590, 13" size="48, 26"/>
-    <view class="CTextLabel" origin="32, 94" size="225, 18" title="REVERB ENGINE" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0"/>
-    <view class="CTextLabel" origin="543, 94" size="85, 18" title="MASTER" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
-    <view class="CTextLabel" origin="29, 125" size="90, 17" title="Size" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
-    <view class="CView" custom-view-name="Size" origin="41, 146" size="66, 66"/>
-    <view class="CTextEdit" control-tag="Size" origin="44, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
-    <view class="CTextLabel" origin="155, 125" size="90, 17" title="Damping" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
-    <view class="CView" custom-view-name="Damping" origin="167, 146" size="66, 66"/>
-    <view class="CTextEdit" control-tag="Damping" origin="170, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
-    <view class="CTextLabel" origin="281, 125" size="90, 17" title="Width" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
-    <view class="CView" custom-view-name="Width" origin="293, 146" size="66, 66"/>
-    <view class="CTextEdit" control-tag="Width" origin="296, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
-    <view class="CTextLabel" origin="407, 125" size="90, 17" title="Mix" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
-    <view class="CView" custom-view-name="Mix" origin="419, 146" size="66, 66"/>
-    <view class="CTextEdit" control-tag="Mix" origin="422, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
-    <view class="CTextLabel" origin="545, 141" size="82, 18" title="Enable" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
-    <view class="CView" custom-view-name="Enable" origin="546, 168" size="78, 30"/>
-    <view class="CTextLabel" origin="542, 219" size="87, 22" title="FREEVERB" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
+  <template background-color="Background" class="CViewContainer" maxSize="930, 410" minSize="930, 410" mouse-enabled="true" name="view" opacity="1" origin="0, 0" size="930, 410" transparent="false">
+    <view class="CView" custom-view-name="RetroFaceplate" origin="0, 0" size="930, 410" mouse-enabled="false"/>
+    <view class="CView" custom-view-name="BrandLogo" origin="26, 15" size="124, 62" mouse-enabled="false"/>
+    <view class="CTextLabel" origin="283, 20" size="370, 32" title="125A RETRO REVERB" transparent="true" back-color="Background" font="~ NormalFontBig" font-color="Text" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="282, 53" size="370, 17" title="ORIGINAL FREEVERB / 2000" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="792, 30" size="43, 20" title="GUI" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="right"/>
+    <view class="CView" custom-view-name="GuiZoom" origin="840, 24" size="70, 30"/>
+    <view class="CTextLabel" origin="800, 121" size="100, 24" title="MASTER" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
+
+    <view class="CTextLabel" origin="56, 143" size="125, 24" title="Size" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Size" origin="56, 176" size="125, 125"/>
+    <view class="CTextEdit" control-tag="Size" origin="78, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+
+    <view class="CTextLabel" origin="238, 143" size="125, 24" title="Damping" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Damping" origin="238, 176" size="125, 125"/>
+    <view class="CTextEdit" control-tag="Damping" origin="260, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+
+    <view class="CTextLabel" origin="420, 143" size="125, 24" title="Width" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Width" origin="420, 176" size="125, 125"/>
+    <view class="CTextEdit" control-tag="Width" origin="442, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+
+    <view class="CTextLabel" origin="602, 143" size="125, 24" title="Mix" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Mix" origin="602, 176" size="125, 125"/>
+    <view class="CTextEdit" control-tag="Mix" origin="624, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+
+    <view class="CTextLabel" origin="794, 167" size="110, 24" title="Enable" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Enable" origin="798, 213" size="104, 44"/>
+    <view class="CTextLabel" origin="789, 330" size="120, 24" title="FREEVERB" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
   </template>
   <control-tags>
     <control-tag name="Enable" tag="100"/>

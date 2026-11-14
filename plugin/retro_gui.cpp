@@ -30,14 +30,14 @@ public:
       c->setFrameColor(edge);c->setLineWidth(1);
       c->drawGraphicsPath(path,VSTGUI::CDrawContext::kPathStroked);path->forget();
     };
-    panel({0,0,650,68},0,{18,22,28,255},{7,10,15,255},{26,39,52,255});
-    panel({15,82,522,282},9,{24,66,108,255},{9,30,55,255},{55,111,167,230});
-    panel({536,82,634,282},9,{23,66,105,255},{9,30,53,255},{55,111,167,230});
+    panel({0,0,930,88},0,{18,22,28,255},{7,10,15,255},{26,39,52,255});
+    panel({20,101,766,395},9,{24,66,108,255},{9,30,55,255},{55,111,167,230});
+    panel({782,101,917,395},9,{23,66,105,255},{9,30,53,255},{55,111,167,230});
     c->setFrameColor({62,122,178,200});c->setLineWidth(1);
-    c->drawLine({18,68},{632,68});
+    c->drawLine({22,88},{908,88});
     c->setFillColor({23,29,37,255});
-    for(auto p:{VSTGUI::CPoint{9,9},VSTGUI::CPoint{641,9},
-                VSTGUI::CPoint{9,289},VSTGUI::CPoint{641,289}})
+    for(auto p:{VSTGUI::CPoint{10,10},VSTGUI::CPoint{920,10},
+                VSTGUI::CPoint{10,400},VSTGUI::CPoint{920,400}})
       c->drawEllipse({p.x-3,p.y-3,p.x+3,p.y+3},VSTGUI::kDrawFilled);
     setDirty(false);
   }

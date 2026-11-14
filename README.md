@@ -34,3 +34,9 @@ Die VSTGUI-Oberfläche verwendet **dieselben bestehenden Klassen** `UglyKnob`, `
 ## Bundle naming
 
 The installed plugin bundle is **`125A_Retro_Reverb.vst3`**. Remove any obsolete `A125_Retro_Reverb.vst3` bundle from previous P004/P003 test installs before installing the renamed build. The VST3 plugin class UID and state format are unchanged.
+
+## P004.1 GUI quality fix
+
+Following the Fender Studio Pro screenshot, the knobs were enlarged from **66 px to 125 px**, the native original master frame size. Rebuilding the 101-frame strip at its native resolution avoids the downsample blur, and a matching 250 px HiDPI strip is bundled. The same original `UglyKnob` implementation is used, patched only in the build directory to select its new native-size resource. The `UglyToggle` retains its original on/off interaction but gains a brighter silver metallic bezel. Removed "REVERB ENGINE". Enlarged window to **930 × 410 px** with four evenly spaced controls.
+
+No DSP, Freeverb coefficients or VST3 parameter identifiers have been changed. The original Ugly Reverb repo remains unchanged.

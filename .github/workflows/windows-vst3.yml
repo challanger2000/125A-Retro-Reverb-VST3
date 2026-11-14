@@ -1,4 +1,4 @@
-name: Windows x64 – original Freeverb P004 with Ugly GUI + P74 Lab
+name: Windows x64 – P004.1 Original Freeverb sharp 125px Ugly GUI + P74 Lab
 on:
   push:
     branches: [main]
@@ -41,11 +41,11 @@ jobs:
           $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*125A*' } | Select-Object -First 1
           if (-not $bundle) { throw 'Windows VST3 bundle missing' }
           if ($bundle.Name -ne '125A_Retro_Reverb.vst3') { throw "Unexpected VST3 package folder: $($bundle.Name)" }
-          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P004-Correct-125A-Name-Windows-x64.zip -Force
+          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P0041-SharpKnobs-Windows-x64.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: 125A-Retro-Reverb-P004-Correct-125A-Name-Windows-x64-VST3
-          path: 125A-Retro-Reverb-P004-Correct-125A-Name-Windows-x64.zip
+          name: 125A-Retro-Reverb-P0041-SharpKnobs-Windows-x64-VST3
+          path: 125A-Retro-Reverb-P0041-SharpKnobs-Windows-x64.zip
           if-no-files-found: error
       - name: Checkout independent 125A Plugin Test Lab (pinned)
         uses: actions/checkout@v4
