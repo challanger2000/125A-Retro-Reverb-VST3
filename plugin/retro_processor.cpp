@@ -48,9 +48,11 @@ tresult PLUGIN_API RetroProcessor::setBusArrangements(
   if(!((inChannels==2 && outChannels==2) ||
        (inChannels==1 && outChannels==1) ||
        (inChannels==1 && outChannels==2))) return kResultFalse;
-  if(!getAudioInput(0) || !getAudioOutput(0)) return kResultFalse;
-  getAudioInput(0)->setArrangement(in[0]);
-  getAudioOutput(0)->setArrangement(out[0]);
+  auto* inputBus=FCast<AudioBus>(audioInputs.at(0));
+  auto* outputBus=FCast<AudioBus>(audioOutputs.at(0));
+  if(!inputBus || !outputBus) return kResultFalse;
+  inputBus->setArrangement(in[0]);
+  outputBus->setArrangement(out[0]);
   return kResultTrue;
 }
 
