@@ -1,26 +1,19 @@
-# START HERE — 125A Retro Reverb original Freeverb port
+# START HERE — 125A Retro Reverb
 
-This branch builds a native **Windows x64 VST3** powered by Jezar's original Freeverb (\`freeverb_core\`). It requires Windows/Visual Studio 2022 Desktop C++, CMake >= 3.25 and Git.
+**Current branch scope:** P004.5 / Windows x64 VST3 **0.3.5**, technical development candidate, **not a commercially approved final release**.
+
+Read [README.md](README.md) for the current plugin contract and [docs/P0045-TECHNICAL-QA.md](docs/P0045-TECHNICAL-QA.md) for the tested revision, QA evidence and remaining gaps. Follow the applicable central `125A-Engineering` rules for new development.
 
 ## Build
 
-\`\`\`bat
+Windows / Visual Studio 2022 Desktop C++, CMake ≥3.25, Python 3 and Git:
+
+```bat
 build_windows.bat
-\`\`\`
+```
 
-This checks out the pinned Steinberg VST3 SDK 3.8.1, builds \`125A_Retro_Reverb\`, runs the original Freeverb tests, Mix-law tests and source-research comparisons, then CTest.
+The script checks the exact Steinberg VST3 SDK commit `3cdf9ca5d1f5b1b21e0a86832aa4abe55607bd96` and reuses the pinned Ugly Reverb GUI. Five CTests run, including the **real production processor** audio/state regression. Windows Actions additionally runs Steinberg Validator, independent P74/P98 technical baseline and 125A Plugin Tester v0.3.2.
 
-## Automated CI gates
+**Not yet run:** real Fender Studio Pro / physical ASIO and complete hands-on GUI/sonic acceptance. `TECHNICAL_BASELINE_PASS` is not `release_approved=true`.
 
-- **Steinberg VST3 validator 47/47**
-- **125A Plugin Test Lab P74/P98**, pinned to a known source SHA, for real VST3 audio/state stress
-- **Original Freeverb tests:** unchanged filter-path delay timings, 101 Mix positions, unity dry at 0%, silence after return to 0%, stereo
-- **Offline 44.1 kHz measurement tool:** actual Jezar Freeverb DSP only (NOT the JUCE research DSP), see \`docs/AUDIO-AB.md\`
-
-The original source is published as Public Domain. See \`THIRD_PARTY.md\` for the documented build/reset changes. No Virtual Vocaid binary or sample banks are packaged.
-
-## Quality gates still open
-
-Direct comparison of the actual supplied wet/dry WAVs against Jezar Freeverb output, final graphic interface, Studio One/ASIO hands-on test. No claim of Vocaid 1:1 sound until that comparison is measured.
-
-**Original tuning means fixed sample delays for 44.1 kHz even at other host sample rates.** This behavior is intentional. The 125A exception is limited to the user-facing Mix dry gain: 0% means unchanged dry.
+**Original DSP:** Jezar Freeverb, unchanged fixed delays originally designed for 44.1 kHz. User-facing 125A Mix changes only the wet/dry law: 0% dry unity, 100% fully wet.

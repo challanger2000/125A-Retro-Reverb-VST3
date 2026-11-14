@@ -24,5 +24,5 @@ cmake --build build-win --config Release --target 125A_Retro_Reverb reverb_tests
 if errorlevel 1 exit /b 1
 ctest --test-dir build-win -C Release --output-on-failure
 if errorlevel 1 exit /b 1
-echo P004 original Freeverb with reused Ugly Reverb VSTGUI built and tested.
+echo P004.5 Retro Reverb v0.3.5 VST3 and native CTests built and tested.
 endlocal
