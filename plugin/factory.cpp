@@ -12,7 +12,7 @@ BEGIN_FACTORY_DEF("125A", "https://github.com/challanger2000/125A-Retro-Reverb-V
     "125A Retro Reverb",
     0,
     "Fx|Reverb",
-    "0.3.1",
+    "0.3.2",
     kVstVersionString,
     a125::RetroProcessor::createInstance)
 END_FACTORY

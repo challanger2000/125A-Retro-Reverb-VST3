@@ -40,3 +40,7 @@ The installed plugin bundle is **`125A_Retro_Reverb.vst3`**. Remove any obsolete
 Following the Fender Studio Pro screenshot, the knobs were enlarged from **66 px to 125 px**, the native original master frame size. Rebuilding the 101-frame strip at its native resolution avoids the downsample blur, and a matching 250 px HiDPI strip is bundled. The same original `UglyKnob` implementation is used, patched only in the build directory to select its new native-size resource. The `UglyToggle` retains its original on/off interaction but gains a brighter silver metallic bezel. Removed "REVERB ENGINE". Enlarged window to **930 × 410 px** with four evenly spaced controls.
 
 No DSP, Freeverb coefficients or VST3 parameter identifiers have been changed. The original Ugly Reverb repo remains unchanged.
+
+## P004.2 - Polished silver Enable rocker
+
+The user's Windows screenshot showed the **round Enable thumb was still gray**, despite the metallic rim. To address the actual sphere, `plugin/retro_gui.cpp` now subclasses `UglyToggle` solely for painting its original switch head with a high-contrast chrome body, concentric steel/silver rings and strong white reflection. Event handling and the VST3 `Enable` parameter binding are inherited unchanged. Enlarged Enable control **118 × 56 px** (versus 104 × 44) makes the new metal ball clearly visible at 100% zoom. No audio/DSP code touched. Retained VSTGUI so the current plugin editor and 125A Test Lab continue working without adding another framework.
