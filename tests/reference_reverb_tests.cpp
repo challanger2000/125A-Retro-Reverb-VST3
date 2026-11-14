@@ -18,8 +18,9 @@ void operator delete[](void* p,std::size_t) noexcept{std::free(p);}
 #define CHECK(x) do {if(!(x)){std::fprintf(stderr,"FAIL %s:%d %s\n",__FILE__,__LINE__,#x);std::abort();}}while(0)
 using a125::VocaidReferenceReverb;
 static void testGainLaw() {
-    VocaidReferenceReverb r;CHECK(r.prepare(44100));
+    VocaidReferenceReverb r;
     auto p=r.controls();p.mix=0;r.setControls(p);
+    CHECK(r.prepare(44100)); // default/initial params are snapped, not ramped
     float l[4]={.25f,-.125f,.6f,-.7f},rr[4]={-.1f,.5f,.25f,0.f},ol[4]{},orr[4]{};
     r.processStereo(l,rr,ol,orr,4);
     for(int i=0;i<4;++i){CHECK(ol[i]==l[i]*2.f);CHECK(orr[i]==rr[i]*2.f);}

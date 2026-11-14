@@ -44,13 +44,15 @@ public:
             for (int i=0; i<4; ++i)
                 allpasses_[ch][i].prepare(std::max(1, (sr * (allpassTunings[i] + 23 * ch)) / 44100));
         }
+        // JUCE Reverb constructor sets its default parameter targets before
+        // setSampleRate(), which snaps every SmoothedValue to its current target.
+        updateTargets();
         const int smoothingSamples = static_cast<int>(std::floor(sampleRate * .01)); // JUCE 6.1.6
         damping_.reset(smoothingSamples);
         feedback_.reset(smoothingSamples);
         dry_.reset(smoothingSamples);
         wetSame_.reset(smoothingSamples);
         wetCross_.reset(smoothingSamples);
-        updateTargets();
         reset();
         ready_ = true;
         return true;
