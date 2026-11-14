@@ -1,0 +1,9 @@
+build*/
+external/
+.vs/
+*.user
+*.suo
+*.obj
+*.pdb
+*.dll
+*.vst3/
