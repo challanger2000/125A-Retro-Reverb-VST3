@@ -1,46 +1,34 @@
-# 125A Retro Reverb — original Jezar Freeverb VST3 port
+# 125A Retro Reverb — original Freeverb VST3
 
-**Windows x64 VST3 · C++23 · Steinberg VST3 SDK 3.8.1 · No JUCE runtime**
+**Windows x64 VST3 · P004.5 / v0.3.5 technical candidate · C++23 · Steinberg SDK 3.8.1 · no JUCE runtime**
 
-This plugin deliberately uses the classic **Freeverb by Jezar at Dreampoint (2000)**. The active stereo DSP is the original public-domain \`revmodel\` from \`third_party/freeverb/Components\`, not a new reverb implementation. There are **no additional filters, predelay, modulation, EQ, saturation, or invented sound-character adjustments**.
+The effect uses **Jezar at Dreampoint's original Freeverb** comb/allpass algorithms, unchanged under `third_party/freeverb/Components`. The VST3 wrapper handles audio buffers, parameter automation, project recall, dry/wet mixing and numerical input safety. There is no additional EQ, modulation, predelay or original 125A reverb algorithm.
 
-**The sole intentional control-law exception:** The user-facing **Mix** knob must follow 125A's rule: **0% = original dry signal exactly at unity gain, no wet; 100% = fully wet, no dry.** Because original Freeverb internally applies a dry gain of 2, the VST3 wrapper calls \`setdry((1-Mix)/2)\` and \`setwet(Mix)\`. The original filter formulas remain unchanged. Switching Mix to zero discards an old wet tail rather than allowing it to reappear when Mix is increased again.
+## Controls
 
-\`Enable\` is a true unity-gain bypass. \`Size\`, \`Damping\`, and \`Width\` call the original setters directly.
+- **Enable:** Off gives unity dry output; the existing reverb tank advances on silence so its tail does not freeze and reappear later.
+- **Size, Damping, Width:** original Freeverb setters.
+- **Mix:** 0% is **exact dry at unity**, with the old wet tail cleared; 100% is fully wet. The intermediate dry gain compensates for Freeverb's internal ×2 dry multiplier.
+- Five VST3 parameter IDs **100–104** and the existing 24-byte component state format remain stable. All host automation points are consumed at their sample offsets.
 
-## Supported audio layouts
+Stereo → stereo, mono → stereo and mono → mono are supported in **32-bit float**. Non-finite samples are prevented from entering the recursive DSP. For finite inputs, the dry/bypass output remains unity and unaltered.
 
-Stereo → Stereo (the original Freeverb stereo algorithm), Mono → Stereo (duplicate input into original stereo network), Mono → Mono (original left reverberation channel). The original Freeverb mixes L/R for the wet excitation and uses different filter delays for left/right output. Dry stereo channels retain their original separation.
+**Original Freeverb limitation:** delay lengths are fixed for 44.1 kHz. As in the original, higher sample rates shorten delays/decays in seconds. No retuning of the original Freeverb filter equations.
 
-## Deliberately original behavior
+## GUI
 
-- **Original Freeverb fixed sample-delay lengths** assume 44.1 kHz. This port does **not** alter the delays at 48 or 96 kHz; higher-rate decay time will therefore be shorter in seconds. This is a conscious 1:1-source decision, not a bug fix or alternative reverb model.
-- Freeverb's original Wet scale (3), Damping scale (0.4), Room size scale (0.28) and offset (0.7) remain intact.
-- Minimal compiler compatibility and defined reset/constructor-state corrections are documented in [THIRD_PARTY.md](THIRD_PARTY.md); the musical filter-processing equations are unchanged.
-- Native P004 VSTGUI with the reused Ugly Reverb hardware controls, plus host parameter automation.
+Fixed **930 × 410 px** VSTGUI editor, **four 125 px UglyKnob controls** from [125A Ugly Reverb Final](https://github.com/challanger2000/125A-Ugly-Reverb-Final), pinned at `631c79b5fddfb19b916d927f0918134576a3a031`. The Enable switch uses a transparent two-state PNG and VSTGUI `COnOffButton`. **No zoom UI.** The other plugin's DSP is not linked.
 
-## Build and tests
+## Building / verification
 
-Read [START-HERE.md](START-HERE.md). \`build_windows.bat\` builds the Windows VST3, runs CTest, the Steinberg Validator, and independent 125A Plugin Test Lab P74/P98 in GitHub Actions. The VST3 links only the **\`freeverb_core\`** DSP library; JUCE-like code under \`src/reference_reverb.hpp\` and tests under \`third_party/juce_616\` are archived comparative research and not linked into the plugin.
+Run `build_windows.bat` with Visual Studio 2022 C++, CMake ≥3.25, Git and Python 3 on Windows. The build verifies the Steinberg SDK at exact commit `3cdf9ca5d1f5b1b21e0a86832aa4abe55607bd96` (`v3.8.1_build_84`), builds `125A_Retro_Reverb.vst3` and runs five CTests, including the native production-processor audio/state regression.
 
-The offline comparison command in [docs/AUDIO-AB.md](docs/AUDIO-AB.md) tests actual supplied Virtual Vocaid WAVs against the unchanged Jezar Freeverb algorithm at 44.1 kHz, without normalizing away any level mismatch. Klanggleichheit mit Virtual Vocaid ist bis zum erfolgreichen A/B-Vergleich nicht behauptet.
+The Windows Actions workflow also runs the official Steinberg Validator, independent **125A Plugin Test Lab P74/P98**, and the exact **125A Plugin Tester v0.3.2** source revision used in the owner's original warning report. It checks the actual packaged VST3 class/bundle versions.
 
-**Current state:** candidate VST3, not a final commercial release; studio/ASIO practical test and final GUI acceptance remain open.
+**Verified November 14, 2026, source `0509aa8`:** 5/5 CTests, 47/47 Steinberg Validator, P74/P98 `TECHNICAL_BASELINE_PASS`, and 125A Plugin Tester **45 PASS / 0 WARNING / 0 FAIL**. See [P004.5 technical QA](docs/P0045-TECHNICAL-QA.md) and [repair PR #2](https://github.com/challanger2000/125A-Retro-Reverb-VST3/pull/2). The automated tests establish only their named contracts.
 
-## P004 — GUI-Wiederverwendung aus Ugly Reverb
+## Product acceptance
 
-Die VSTGUI-Oberfläche verwendet **dieselben bestehenden Klassen** `UglyKnob`, `UglyToggle`, `UglyLogo`, `UglyZoomControl` und denselben 101-Frame-Regler-Spritesheet samt HiDPI-Buildskript aus [125A-Ugly-Reverb-Final](https://github.com/challanger2000/125A-Ugly-Reverb-Final), gepinnt auf Commit `631c79b5fddfb19b916d927f0918134576a3a031`. Es werden **keine eigenen Regler** neu entwickelt. Das reduzierte Layout ist 650 × 298 px groß, mit Size, Damping, Width, Mix, Enable und den vorhandenen numerischen Anzeigen. Nur das kompakte Frontplattenlayout ist neu. Der Freeverb-DSP bleibt unverändert; Ugly Reverb DSP wird nicht eingebunden.
+**Not a final commercial release.** Direct Fender Studio Pro / physical ASIO, real GUI interaction and representative musical level-matched A/B are **NOT RUN / NOT VERIFIED**. P74 correctly reports `release_approved=false`. The [Virtual Vocaid A/B pipeline](docs/AUDIO-AB.md) self-test is not a claim of Virtual Vocaid sonic equivalence.
 
-## Bundle naming
-
-The installed plugin bundle is **`125A_Retro_Reverb.vst3`**. Remove any obsolete `A125_Retro_Reverb.vst3` bundle from previous P004/P003 test installs before installing the renamed build. The VST3 plugin class UID and state format are unchanged.
-
-## P004.1 GUI quality fix
-
-Following the Fender Studio Pro screenshot, the knobs were enlarged from **66 px to 125 px**, the native original master frame size. Rebuilding the 101-frame strip at its native resolution avoids the downsample blur, and a matching 250 px HiDPI strip is bundled. The same original `UglyKnob` implementation is used, patched only in the build directory to select its new native-size resource. The `UglyToggle` retains its original on/off interaction but gains a brighter silver metallic bezel. Removed "REVERB ENGINE". Enlarged window to **930 × 410 px** with four evenly spaced controls.
-
-No DSP, Freeverb coefficients or VST3 parameter identifiers have been changed. The original Ugly Reverb repo remains unchanged.
-
-## P004.2 - Polished silver Enable rocker
-
-The user's Windows screenshot showed the **round Enable thumb was still gray**, despite the metallic rim. To address the actual sphere, `plugin/retro_gui.cpp` now subclasses `UglyToggle` solely for painting its original switch head with a high-contrast chrome body, concentric steel/silver rings and strong white reflection. Event handling and the VST3 `Enable` parameter binding are inherited unchanged. Enlarged Enable control **118 × 56 px** (versus 104 × 44) makes the new metal ball clearly visible at 100% zoom. No audio/DSP code touched. Retained VSTGUI so the current plugin editor and 125A Test Lab continue working without adding another framework.
+For original source and licensing notes see [THIRD_PARTY.md](THIRD_PARTY.md).

@@ -1,4 +1,4 @@
-name: Windows x64 – P004.4 fixed GUI (no Zoom) + P74 Lab
+name: Windows x64 – P004.5 Retro Reverb QA
 on:
   push:
     branches: [main]
@@ -45,17 +45,30 @@ jobs:
           if (Get-ChildItem build-win -Recurse -Directory -Filter 'A125_Retro_Reverb.vst3') { throw 'Obsolete A125 bundle name was generated' }
           & $validator $bundle.FullName
           if ($LASTEXITCODE -ne 0) { throw "VST3 validator failed (exit $LASTEXITCODE)" }
+      - name: Verify actual VST3 moduleinfo factory/bundle version
+        shell: pwsh
+        run: |
+          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '125A_Retro_Reverb.vst3' | Select-Object -First 1
+          if (-not $bundle) { throw 'Candidate package missing' }
+          $manifest = Get-ChildItem $bundle.FullName -Recurse -File -Filter 'moduleinfo.json' | Select-Object -First 1
+          if (-not $manifest) { throw 'Packaged VST3 moduleinfo.json missing' }
+          $matches = [regex]::Matches((Get-Content $manifest.FullName -Raw), '"Version"\s*:\s*"([^"]+)"')
+          if ($matches.Count -lt 2) { throw 'Package and class version fields missing' }
+          foreach ($match in $matches) {
+            if ($match.Groups[1].Value -ne '0.3.5') { throw "Wrong VST3 version: $($match.Groups[1].Value)" }
+          }
+          Write-Host 'PASS: factory/class/bundle version consistently 0.3.5'
       - name: Package VST3 candidate
         shell: pwsh
         run: |
           $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*125A*' } | Select-Object -First 1
           if (-not $bundle) { throw 'Windows VST3 bundle missing' }
           if ($bundle.Name -ne '125A_Retro_Reverb.vst3') { throw "Unexpected VST3 package folder: $($bundle.Name)" }
-          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P0044-NoZoom-Windows-x64.zip -Force
+          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-v0.3.5-Windows-x64-VST3.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: 125A-Retro-Reverb-P0044-NoZoom-Windows-x64-VST3
-          path: 125A-Retro-Reverb-P0044-NoZoom-Windows-x64.zip
+          name: 125A-Retro-Reverb-v0.3.5-Windows-x64-VST3
+          path: 125A-Retro-Reverb-v0.3.5-Windows-x64-VST3.zip
           if-no-files-found: error
       - name: Checkout independent 125A Plugin Test Lab (pinned)
         uses: actions/checkout@v4
@@ -95,4 +108,52 @@ jobs:
         with:
           name: 125A-Retro-Reverb-P74-Independent-Test-Lab-evidence
           path: build-win/test-lab-p74/
+          if-no-files-found: warn
+
+      - name: Checkout exact 125A Plugin Tester source from owner QA report
+        uses: actions/checkout@v4
+        with:
+          repository: challanger2000/125A-Plugin-Tester-Final
+          ref: f053c1d8f858df06231111861550f0c2c69ef179
+          path: external/plugin-tester
+          persist-credentials: false
+      - name: Build exact 125A Plugin Tester v0.3.2 on Windows
+        shell: pwsh
+        run: |
+          $sdk = (Resolve-Path 'external/vst3sdk').Path
+          cmake -S external/plugin-tester -B build-plugin-tester -G "Visual Studio 17 2022" -A x64 "-DFETCHCONTENT_SOURCE_DIR_VST3SDK=$sdk"
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin Tester configure failed' }
+          cmake --build build-plugin-tester --config Release --parallel 4 --target PluginTester125ADispatcher PluginTester125ALauncher PluginTester125AWorker PluginTester125AReloadProbe PluginTester125AStateProbe PluginTester125AEditorLifecycleProbe PluginTester125AIOEventProbe PluginTester125AValidatorWrapper
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin Tester build failed' }
+      - name: Retest with exact local 125A Plugin Tester 0.3.2
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '125A_Retro_Reverb.vst3' | Select-Object -First 1
+          $exe = Get-ChildItem build-plugin-tester -Recurse -File -Filter '125A_Plugin_Tester.exe' | Select-Object -First 1
+          if (-not $bundle -or -not $exe) { throw 'Exact 125A Tester or plugin missing' }
+          $reports = Join-Path $env:LOCALAPPDATA '125A Plugin Tester/Reports'
+          $output = 'build-win/125a-plugin-tester-evidence'
+          New-Item $output -ItemType Directory -Force | Out-Null
+          $PSNativeCommandUseErrorActionPreference = $false
+          try {
+            & $exe.FullName $bundle.FullName
+            $code = $LASTEXITCODE
+            $json = Get-ChildItem $reports -File -Filter '*_125A_QA_Report.json' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $json) { throw 'No 125A Tester JSON report was generated' }
+            $qa = Get-Content $json.FullName -Raw | ConvertFrom-Json
+            Write-Host "QA: $($qa.counts.pass) PASS, $($qa.counts.warning) WARNING, $($qa.counts.fail) FAIL; exit=$code"
+            if ($code -ne 0 -or $qa.counts.warning -ne 0 -or $qa.counts.fail -ne 0) {
+              throw 'Plugin Tester did not eliminate the prior owner warnings'
+            }
+          } finally {
+            if (Test-Path $reports) {
+              Get-ChildItem $reports -File | Copy-Item -Destination $output -Force
+            }
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: 125A-Retro-Reverb-P0045-Actual-Plugin-Tester-0.3.2-retest
+          path: build-win/125a-plugin-tester-evidence/
           if-no-files-found: warn
