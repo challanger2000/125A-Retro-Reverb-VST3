@@ -1,4 +1,4 @@
-name: Windows x64 – native Steinberg VST3 P001
+name: Windows x64 – Vocaid Reference P002 + independent P74 Lab
 on:
   push:
     branches: [main]
@@ -19,6 +19,50 @@ jobs:
         shell: pwsh
         run: |
           python tools/compare_vocaid.py --renderer build-win/Release/vocaid_ab_renderer.exe --selftest
+      - name: Original JUCE 6.1.6 differential PCM comparison
+        shell: pwsh
+        run: |
+          & build-win/Release/juce_616_differential_tests.exe
+          if ($LASTEXITCODE -ne 0) { throw 'JUCE 6.1.6 samplewise reference comparison failed' }
+      - name: Checkout independent 125A Plugin Test Lab (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: challanger2000/125A-Plugin-Test-Lab
+          ref: 7213fe1f81f4036f74431cb5b2d7dbd09b73ee5c
+          path: external/test-lab
+          persist-credentials: false
+      - name: Build independent Windows P74/P98 native test hosts
+        shell: pwsh
+        run: |
+          cmake -S external/test-lab -B build-test-lab -G "Visual Studio 17 2022" -A x64
+          if ($LASTEXITCODE -ne 0) { throw 'Test Lab configure failed' }
+          cmake --build build-test-lab --config Release --parallel 3 --target TestLabGUI TestLabHost TestLabStateStress
+          if ($LASTEXITCODE -ne 0) { throw 'Test Lab host compilation failed' }
+      - name: Independent P74/P98 VST3 audio/state technical baseline
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = @(Get-ChildItem build-win -Recurse -Directory -Filter 'A125_Retro_Reverb.vst3' | Select-Object -First 1)
+          $gui = @(Get-ChildItem build-test-lab -Recurse -File -Filter '125A_Test_Lab_GUI.exe' | Select-Object -First 1)
+          $audio = @(Get-ChildItem build-test-lab -Recurse -File -Filter '125A_Test_Lab_Host.exe' | Select-Object -First 1)
+          $stress = @(Get-ChildItem build-test-lab -Recurse -File -Filter '125A_Test_Lab_State_Stress.exe' | Select-Object -First 1)
+          if ($bundle.Count -ne 1 -or $gui.Count -ne 1 -or $audio.Count -ne 1 -or $stress.Count -ne 1) {
+            throw 'Native P74/P98 plugin or host binary missing'
+          }
+          $PSNativeCommandUseErrorActionPreference = $false
+          python external/test-lab/tests/run_universal_qa.py --plugin $bundle[0].FullName --gui-host $gui[0].FullName --audio-host $audio[0].FullName --stress-host $stress[0].FullName --run-technical-baseline --timeout 110 --out build-win/test-lab-p74
+          if ($LASTEXITCODE -ne 0) { throw 'Independent P74/P98 technical baseline failed' }
+          $report = Get-Content 'build-win/test-lab-p74/UNIVERSAL-QA-RESULT.json' -Raw | ConvertFrom-Json
+          if ($report.status -ne 'TECHNICAL_BASELINE_PASS' -or $report.native_technical -ne 'PASS' -or $report.release_approved -ne $false) {
+            throw "Unexpected Test Lab QA result: $($report.status) / $($report.native_technical)"
+          }
+          Write-Host 'Independent Test Lab: TECHNICAL_BASELINE_PASS; release_approved=false'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: 125A-Retro-Reverb-P74-Independent-Test-Lab-evidence
+          path: build-win/test-lab-p74/
+          if-no-files-found: warn
       - name: Steinberg VST3 Validator (basic)
         shell: pwsh
         run: |
@@ -33,9 +77,9 @@ jobs:
         run: |
           $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
           if (-not $bundle) { throw 'Windows VST3 bundle missing' }
-          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P001-Windows-x64.zip -Force
+          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P002-Windows-x64.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: 125A-Retro-Reverb-P001-Windows-x64-VST3-CANDIDATE
-          path: 125A-Retro-Reverb-P001-Windows-x64.zip
+          name: 125A-Retro-Reverb-P002-Windows-x64-VST3-CANDIDATE
+          path: 125A-Retro-Reverb-P002-Windows-x64.zip
           if-no-files-found: error

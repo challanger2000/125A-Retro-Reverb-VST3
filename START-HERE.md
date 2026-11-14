@@ -36,3 +36,10 @@ ctest --test-dir build-core -C Release --output-on-failure
 ## 4. Next engineering steps
 
 Compare actual impulse responses at matching Size/Damping/Width/Mix and 44.1 kHz. Locate additional color/level processing in Vocaid, then add samplerate-scaled network and measurable no-allocation callback tests. Integrate the resulting shared core into the 125A speech processor only after the reverb A/B sign-off.
+
+
+## Independent P74/P98 test-lab gate
+
+The Windows CI checks out a pinned SHA of `challanger2000/125A-Plugin-Test-Lab` and builds the independent native `TestLabGUI`, `TestLabHost` and `TestLabStateStress` executables. The shared P74 pipeline uses the real source-built effect VST3 without changing its source, performs read-only ABI discovery followed by an **explicitly invoked** native audio/state/stress technical baseline, and fails unless `TECHNICAL_BASELINE_PASS` is independently confirmed. No GUI clicks, live ASIO or commercial DAW tests are implied. See `external/test-lab/docs/P98-STEREO-EFFECT-INPUT-STRESS.md`.
+
+P002 also runs an actual copy of the **ISC-licensed JUCE 6.1.6 Reverb source** as a test-only golden reference, reporting samplewise comparisons at multiple rates. Neither the original Virtual Vocaid DLL nor its sample banks are committed to GitHub.
