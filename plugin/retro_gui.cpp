@@ -11,6 +11,62 @@
 namespace a125 {
 using namespace Steinberg;
 namespace {
+// Original UglyToggle handles all interaction and parameter binding. 125A
+// paints only a new raised, polished-silver thumb over the existing switch.
+// This avoids replacing the GUI framework or touching any DSP code.
+class RetroSilverToggle final : public UglyReverb::UglyToggle {
+public:
+  RetroSilverToggle(const VSTGUI::CRect& rect,VSTGUI::IControlListener* listener,int32_t tag)
+    : UglyReverb::UglyToggle(rect,listener,tag) {}
+  RetroSilverToggle(const RetroSilverToggle& other)
+    : UglyReverb::UglyToggle(other) {}
+  VSTGUI::CBaseObject* newCopy() const override {return new RetroSilverToggle(*this);}
+  void draw(VSTGUI::CDrawContext* ctx) override {
+    UglyReverb::UglyToggle::draw(ctx);
+    const auto r=getViewSize();
+    const bool enabled=getValueNormalized()>=0.5f;
+    VSTGUI::CRect track=r;
+    track.inset(3.,3.);
+    const double diameter=track.getHeight()-4.0;
+    const double cy=track.getCenter().y;
+    const double cx=enabled?(track.right-2.0-diameter*0.5)
+                           :(track.left+2.0+diameter*0.5);
+    // Draw exactly over the formerly gray thumb, at its original position.
+    VSTGUI::CRect outer(cx-diameter*.5,cy-diameter*.5,
+                        cx+diameter*.5,cy+diameter*.5);
+    ctx->setDrawMode(VSTGUI::kAntiAliasing|VSTGUI::kNonIntegralMode);
+    auto metalDisc=[&](VSTGUI::CRect rect,VSTGUI::CColor light,
+                       VSTGUI::CColor dark,VSTGUI::CColor border,double width) {
+      auto* path=ctx->createRoundRectGraphicsPath(rect,rect.getWidth()*.5);
+      if(!path)return;
+      if(auto* grad=VSTGUI::CGradient::create(0.,1.,light,dark)){
+        ctx->fillLinearGradient(path,*grad,rect.getTopLeft(),rect.getBottomLeft(),false);
+        grad->forget();
+      }
+      ctx->setFrameColor(border);
+      ctx->setLineWidth(width);
+      ctx->drawGraphicsPath(path,VSTGUI::CDrawContext::kPathStroked);
+      path->forget();
+    };
+    // Three concentric rings, like a machined chrome push-switch.
+    metalDisc(outer,{255,255,255,255},{111,127,142,255},{249,253,255,255},1.4);
+    VSTGUI::CRect bezel=outer;bezel.inset(2.1,2.1);
+    metalDisc(bezel,{150,167,181,255},{55,70,84,255},{223,233,242,255},.7);
+    VSTGUI::CRect face=outer;face.inset(4.0,4.0);
+    metalDisc(face,{255,255,255,255},{179,191,202,255},{247,251,254,255},.7);
+    // Bright, asymmetric reflection: the button must read as SILVER,
+    // not as a uniform gray UI circle, even in a 100%-zoom screenshot.
+    ctx->setFillColor({255,255,255,230});
+    ctx->drawEllipse({cx-diameter*.24,cy-diameter*.35,
+                      cx+diameter*.13,cy-diameter*.19},VSTGUI::kDrawFilled);
+    ctx->setFrameColor({245,250,255,215});
+    ctx->setLineWidth(1.2);
+    ctx->drawLine({face.left+4.,face.top+4.},
+                  {face.left+9.,face.top+2.});
+    setDirty(false);
+  }
+};
+
 class RetroFaceplate final : public VSTGUI::CView {
 public:
   explicit RetroFaceplate(const VSTGUI::CRect& r):CView(r){setMouseEnabled(false);}
@@ -75,7 +131,7 @@ VSTGUI::CView* RetroProcessor::createCustomView(VSTGUI::UTF8StringPtr name,
   if(std::strcmp(name,"Damping")==0)return new UglyReverb::UglyKnob(r,editor,kDamping);
   if(std::strcmp(name,"Width")==0)return new UglyReverb::UglyKnob(r,editor,kWidth);
   if(std::strcmp(name,"Mix")==0)return new UglyReverb::UglyKnob(r,editor,kMix);
-  if(std::strcmp(name,"Enable")==0)return new UglyReverb::UglyToggle(r,editor,kEnable);
+  if(std::strcmp(name,"Enable")==0)return new RetroSilverToggle(r,editor,kEnable);
   return nullptr;
 }
 tresult PLUGIN_API RetroProcessor::getEditorState(IBStream* stream) {
