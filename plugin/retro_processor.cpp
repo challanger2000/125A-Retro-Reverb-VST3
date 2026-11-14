@@ -277,7 +277,8 @@ tresult PLUGIN_API RetroProcessor::getState(IBStream* stream) {
   if(!stream)return kInvalidArgument;
   IBStreamer s(stream,kLittleEndian);
   if(!s.writeInt32(0x125A0001))return kResultFalse;
-  for(float v:{enabled_,size_,damping_,width_,mix_})
+  for(float v:{enabled_.load(),size_.load(),damping_.load(),
+               width_.load(),mix_.load()})
     if(!s.writeFloat(v))return kResultFalse;
   return kResultOk;
 }
