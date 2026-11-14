@@ -1,4 +1,4 @@
-name: Windows x64 – Vocaid Reference P002 + independent P74 Lab
+name: Windows x64 – original Freeverb P004 with Ugly GUI + P74 Lab
 on:
   push:
     branches: [main]
@@ -24,6 +24,26 @@ jobs:
         run: |
           & build-win/Release/juce_616_differential_tests.exe
           if ($LASTEXITCODE -ne 0) { throw 'JUCE 6.1.6 samplewise reference comparison failed' }
+      - name: Steinberg VST3 Validator (basic)
+        shell: pwsh
+        run: |
+          $validator = Join-Path $PWD 'build-win/bin/Release/validator.exe'
+          if (-not (Test-Path $validator)) { throw 'Steinberg validator.exe missing' }
+          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
+          if (-not $bundle) { throw 'VST3 bundle missing for validator' }
+          & $validator $bundle.FullName
+          if ($LASTEXITCODE -ne 0) { throw "VST3 validator failed (exit $LASTEXITCODE)" }
+      - name: Package VST3 candidate
+        shell: pwsh
+        run: |
+          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
+          if (-not $bundle) { throw 'Windows VST3 bundle missing' }
+          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P004-UglyGUI-Windows-x64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 125A-Retro-Reverb-P004-UglyGUI-Windows-x64-VST3-CANDIDATE
+          path: 125A-Retro-Reverb-P004-UglyGUI-Windows-x64.zip
+          if-no-files-found: error
       - name: Checkout independent 125A Plugin Test Lab (pinned)
         uses: actions/checkout@v4
         with:
@@ -63,23 +83,3 @@ jobs:
           name: 125A-Retro-Reverb-P74-Independent-Test-Lab-evidence
           path: build-win/test-lab-p74/
           if-no-files-found: warn
-      - name: Steinberg VST3 Validator (basic)
-        shell: pwsh
-        run: |
-          $validator = Join-Path $PWD 'build-win/bin/Release/validator.exe'
-          if (-not (Test-Path $validator)) { throw 'Steinberg validator.exe missing' }
-          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
-          if (-not $bundle) { throw 'VST3 bundle missing for validator' }
-          & $validator $bundle.FullName
-          if ($LASTEXITCODE -ne 0) { throw "VST3 validator failed (exit $LASTEXITCODE)" }
-      - name: Package VST3 candidate
-        shell: pwsh
-        run: |
-          $bundle = Get-ChildItem build-win -Recurse -Directory -Filter '*.vst3' | Where-Object { $_.Name -like '*Retro*' -or $_.Name -like '*A125*' } | Select-Object -First 1
-          if (-not $bundle) { throw 'Windows VST3 bundle missing' }
-          Compress-Archive -Path $bundle.FullName -DestinationPath 125A-Retro-Reverb-P002-Windows-x64.zip -Force
-      - uses: actions/upload-artifact@v4
-        with:
-          name: 125A-Retro-Reverb-P002-Windows-x64-VST3-CANDIDATE
-          path: 125A-Retro-Reverb-P002-Windows-x64.zip
-          if-no-files-found: error
