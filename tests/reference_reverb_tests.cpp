@@ -81,6 +81,15 @@ static void testPartitionAndReset() {
     }
     for(std::size_t i=0;i<n;++i){CHECK(ol[i]==a[i]);CHECK(orr[i]==b[i]);}
 }
+static void testValidatorSampleRates() {
+    VocaidReferenceReverb rv;
+    CHECK(rv.prepare(1234.568));
+    CHECK(rv.firstCombDelay(0)==static_cast<std::size_t>((1234LL*1116)/44100));
+    CHECK(rv.prepare(1234567.8));
+    CHECK(rv.firstCombDelay(0)==static_cast<std::size_t>((1234567LL*1116)/44100));
+    CHECK(rv.prepare(2000000.0));
+    CHECK(rv.firstCombDelay(0)==static_cast<std::size_t>((2000000LL*1116)/44100));
+}
 static void testMonoAndZeroAllocation() {
     VocaidReferenceReverb rv;CHECK(rv.prepare(48000));
     auto c=rv.controls();c.mix=.67f;rv.setControls(c);
@@ -99,6 +108,6 @@ static void testMonoAndZeroAllocation() {
     CHECK(src[0]==.25f && src[1]==.5f && src[2]==-.8f);
 }
 int main() {
- testGainLaw();testRateAndStereoOnset();testPartitionAndReset();testMonoAndZeroAllocation();
+ testGainLaw();testRateAndStereoOnset();testPartitionAndReset();testMonoAndZeroAllocation();testValidatorSampleRates();
  std::puts("PASS: JUCE 6.1.6 rate scaling at 44.1/48/96, wet/dry law, stereo, smooth, deterministic partition, mono-to-stereo, 1200 allocation-free blocks");
 }

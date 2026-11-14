@@ -17,6 +17,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace a125 {
@@ -32,7 +33,7 @@ public:
 
     // Must run OFF the realtime audio thread; allocates the delay lines.
     bool prepare(double sampleRate) {
-        if (!std::isfinite(sampleRate) || sampleRate < 8000.0 || sampleRate > 384000.0)
+        if (!std::isfinite(sampleRate) || sampleRate < 1000.0 || sampleRate > 2000000.0)
             return false;
         sampleRate_ = sampleRate;
         static constexpr int combTunings[8] = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
@@ -40,9 +41,9 @@ public:
         const int sr = static_cast<int>(sampleRate);
         for (int ch=0; ch<2; ++ch) {
             for (int i=0; i<8; ++i)
-                combs_[ch][i].prepare(std::max(1, (sr * (combTunings[i] + 23 * ch)) / 44100));
+                combs_[ch][i].prepare(std::max(1, static_cast<int>((static_cast<std::int64_t>(sr) * (combTunings[i] + 23 * ch)) / 44100)));
             for (int i=0; i<4; ++i)
-                allpasses_[ch][i].prepare(std::max(1, (sr * (allpassTunings[i] + 23 * ch)) / 44100));
+                allpasses_[ch][i].prepare(std::max(1, static_cast<int>((static_cast<std::int64_t>(sr) * (allpassTunings[i] + 23 * ch)) / 44100)));
         }
         // JUCE Reverb constructor sets its default parameter targets before
         // setSampleRate(), which snaps every SmoothedValue to its current target.

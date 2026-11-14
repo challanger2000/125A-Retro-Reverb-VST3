@@ -125,9 +125,16 @@ tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
       model_.processMono(inPtr(0),outL,count);
     }
   }
-  // Set no silence flags while enabled: the internal network may be ringing.
-  if(enabled_<.5f && input.silenceFlags==((uint64{1}<<nIn)-1))
-    output.silenceFlags=(uint64{1}<<nOut)-1;
+  // True silence reporting: each rendered output channel is examined.
+  // Avoid forcing silence when Freeverb is still ringing after silent input.
+  output.silenceFlags=0;
+  for(int ch=0;ch<nOut;++ch) {
+    bool isSilent=true;
+    for(int i=0;i<data.numSamples;++i) {
+      if(output.channelBuffers32[ch][i]!=0.f) {isSilent=false;break;}
+    }
+    if(isSilent) output.silenceFlags|=(uint64{1}<<ch);
+  }
   return kResultOk;
 }
 
