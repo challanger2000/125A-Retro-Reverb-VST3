@@ -14,55 +14,76 @@ namespace {
 // Original UglyToggle handles all interaction and parameter binding. 125A
 // paints only a new raised, polished-silver thumb over the existing switch.
 // This avoids replacing the GUI framework or touching any DSP code.
-class RetroSilverToggle final : public UglyReverb::UglyToggle {
+// Self-contained 125A polished-silver rocker. Uses VSTGUI only as the
+// underlying plugin control/host event adapter; all artwork is drawn here.
+// Original Ugly Reverb knobs, logo and zoom remain untouched.
+class RetroSilverToggle final : public VSTGUI::COnOffButton {
 public:
   RetroSilverToggle(const VSTGUI::CRect& rect,VSTGUI::IControlListener* listener,int32_t tag)
-    : UglyReverb::UglyToggle(rect,listener,tag) {}
-  RetroSilverToggle(const RetroSilverToggle& other)
-    : UglyReverb::UglyToggle(other) {}
-  VSTGUI::CBaseObject* newCopy() const override {return new RetroSilverToggle(*this);}
-  void draw(VSTGUI::CDrawContext* ctx) override {
-    UglyReverb::UglyToggle::draw(ctx);
+      : VSTGUI::COnOffButton(rect,listener,tag,nullptr) {
+    setTransparency(true);
+    setWantsFocus(true);
+  }
+  RetroSilverToggle(const RetroSilverToggle& other):VSTGUI::COnOffButton(other) {}
+  VSTGUI::CBaseObject* newCopy() const override{return new RetroSilverToggle(*this);}
+  void draw(VSTGUI::CDrawContext* c) override {
     const auto r=getViewSize();
-    const bool enabled=getValueNormalized()>=0.5f;
-    VSTGUI::CRect track=r;
-    track.inset(3.,3.);
-    const double diameter=track.getHeight()-4.0;
-    const double cy=track.getCenter().y;
-    const double cx=enabled?(track.right-2.0-diameter*0.5)
-                           :(track.left+2.0+diameter*0.5);
-    // Draw exactly over the formerly gray thumb, at its original position.
-    VSTGUI::CRect outer(cx-diameter*.5,cy-diameter*.5,
-                        cx+diameter*.5,cy+diameter*.5);
-    ctx->setDrawMode(VSTGUI::kAntiAliasing|VSTGUI::kNonIntegralMode);
-    auto metalDisc=[&](VSTGUI::CRect rect,VSTGUI::CColor light,
-                       VSTGUI::CColor dark,VSTGUI::CColor border,double width) {
-      auto* path=ctx->createRoundRectGraphicsPath(rect,rect.getWidth()*.5);
+    const bool enabled=getValueNormalized()>=0.5;
+    c->setDrawMode(VSTGUI::kAntiAliasing|VSTGUI::kNonIntegralMode);
+    const auto gradientRound=[&](VSTGUI::CRect rect,double radius,
+                                 VSTGUI::CColor top,VSTGUI::CColor bottom,
+                                 VSTGUI::CColor frame,double width) {
+      auto* path=c->createRoundRectGraphicsPath(rect,radius);
       if(!path)return;
-      if(auto* grad=VSTGUI::CGradient::create(0.,1.,light,dark)){
-        ctx->fillLinearGradient(path,*grad,rect.getTopLeft(),rect.getBottomLeft(),false);
-        grad->forget();
+      if(auto* gradient=VSTGUI::CGradient::create(0.,1.,top,bottom)){
+        c->fillLinearGradient(path,*gradient,rect.getTopLeft(),rect.getBottomLeft(),false);
+        gradient->forget();
       }
-      ctx->setFrameColor(border);
-      ctx->setLineWidth(width);
-      ctx->drawGraphicsPath(path,VSTGUI::CDrawContext::kPathStroked);
+      c->setFrameColor(frame);
+      c->setLineWidth(width);
+      c->drawGraphicsPath(path,VSTGUI::CDrawContext::kPathStroked);
       path->forget();
     };
-    // Three concentric rings, like a machined chrome push-switch.
-    metalDisc(outer,{255,255,255,255},{111,127,142,255},{249,253,255,255},1.4);
-    VSTGUI::CRect bezel=outer;bezel.inset(2.1,2.1);
-    metalDisc(bezel,{150,167,181,255},{55,70,84,255},{223,233,242,255},.7);
-    VSTGUI::CRect face=outer;face.inset(4.0,4.0);
-    metalDisc(face,{255,255,255,255},{179,191,202,255},{247,251,254,255},.7);
-    // Bright, asymmetric reflection: the button must read as SILVER,
-    // not as a uniform gray UI circle, even in a 100%-zoom screenshot.
-    ctx->setFillColor({255,255,255,230});
-    ctx->drawEllipse({cx-diameter*.24,cy-diameter*.35,
-                      cx+diameter*.13,cy-diameter*.19},VSTGUI::kDrawFilled);
-    ctx->setFrameColor({245,250,255,215});
-    ctx->setLineWidth(1.2);
-    ctx->drawLine({face.left+4.,face.top+4.},
-                  {face.left+9.,face.top+2.});
+    VSTGUI::CRect shadow=r;
+    shadow.offset(1.5,2.0);
+    gradientRound(shadow,shadow.getHeight()*.5,
+                  {0,0,0,140},{0,0,0,20},{0,0,0,0},0.);
+    gradientRound(r,r.getHeight()*.5,
+                  {249,252,255,255},{87,102,118,255},{240,247,252,255},1.5);
+    VSTGUI::CRect track=r;
+    track.inset(3.5,3.5);
+    gradientRound(track,track.getHeight()*.5,
+                  enabled?VSTGUI::CColor{29,47,65,255}:VSTGUI::CColor{16,22,29,255},
+                  enabled?VSTGUI::CColor{12,20,30,255}:VSTGUI::CColor{32,40,50,255},
+                  {113,136,157,255},1.0);
+
+    // A larger 44px chrome globe is deliberately much brighter than the
+    // former matte-grey factory thumb; no photographic skin or resizing.
+    const double d=track.getHeight()-4.;
+    const double cy=track.getCenter().y;
+    const double cx=enabled?(track.right-2.-d*.5):(track.left+2.+d*.5);
+    const VSTGUI::CRect ring(cx-d*.5,cy-d*.5,cx+d*.5,cy+d*.5);
+    gradientRound(ring,d*.5,
+                  {255,255,255,255},{102,118,135,255},{255,255,255,255},1.45);
+    VSTGUI::CRect steel=ring;
+    steel.inset(2.2,2.2);
+    gradientRound(steel,steel.getWidth()*.5,
+                  {152,172,189,255},{47,63,79,255},{215,229,241,255},.8);
+    VSTGUI::CRect silver=ring;
+    silver.inset(4.2,4.2);
+    gradientRound(silver,silver.getWidth()*.5,
+                  {255,255,255,255},{174,190,203,255},{252,254,255,255},.9);
+    // A distinct white light reflection makes SILVER unmistakable at 100%.
+    c->setFillColor({255,255,255,250});
+    c->drawEllipse({cx-d*.22,cy-d*.34,cx+d*.17,cy-d*.17},
+                   VSTGUI::kDrawFilled);
+    c->setFont(VSTGUI::kNormalFont,9.5,VSTGUI::kBoldFace);
+    c->setFontColor(enabled?VSTGUI::CColor{179,224,252,255}
+                           :VSTGUI::CColor{178,192,203,255});
+    VSTGUI::CRect text=track;
+    if(enabled)text.right=ring.left-1.;
+    else text.left=ring.right+1.;
+    c->drawString(VSTGUI::UTF8String(enabled?"ON":"OFF"),text,VSTGUI::kCenterText);
     setDirty(false);
   }
 };
