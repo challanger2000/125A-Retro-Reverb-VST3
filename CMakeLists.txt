@@ -140,6 +140,16 @@ if(A125_BUILD_VST3)
       resource/retro_lever_off_on_125.png
       "${RETRO_GUI_GENERATED}/ugly_knob_125.png"
       "${RETRO_GUI_GENERATED}/ugly_knob_125#2.0x.png")
-  target_compile_definitions(125A_Retro_Reverb PRIVATE A125_PLUGIN_VERSION="${PROJECT_VERSION}")
+  target_compile_definitions(125A_Retro_Reverb PRIVATE A125_PLUGIN_VERSION=\"${PROJECT_VERSION}\")
   target_compile_features(125A_Retro_Reverb PRIVATE cxx_std_23)
+  # Production processor PCM regression (only GUI link stubs in test executable).
+  add_executable(retro_native_processor_tests
+    tests/retro_native_processor_tests.cpp
+    plugin/retro_processor.cpp
+    external/vst3sdk/public.sdk/source/vst/vstsinglecomponenteffect.cpp
+    external/vst3sdk/public.sdk/source/vst/hosting/parameterchanges.cpp)
+  target_include_directories(retro_native_processor_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  target_link_libraries(retro_native_processor_tests PRIVATE sdk freeverb_core vstgui_support)
+  target_compile_features(retro_native_processor_tests PRIVATE cxx_std_23)
+  add_test(NAME retro_native_processor_tests COMMAND retro_native_processor_tests)
 endif()

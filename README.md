@@ -44,3 +44,7 @@ No DSP, Freeverb coefficients or VST3 parameter identifiers have been changed. T
 ## P004.2 - Polished silver Enable rocker
 
 The user's Windows screenshot showed the **round Enable thumb was still gray**, despite the metallic rim. To address the actual sphere, `plugin/retro_gui.cpp` now subclasses `UglyToggle` solely for painting its original switch head with a high-contrast chrome body, concentric steel/silver rings and strong white reflection. Event handling and the VST3 `Enable` parameter binding are inherited unchanged. Enlarged Enable control **118 × 56 px** (versus 104 × 44) makes the new metal ball clearly visible at 100% zoom. No audio/DSP code touched. Retained VSTGUI so the current plugin editor and 125A Test Lab continue working without adding another framework.
+
+## P004.5 – Reparatur und Regression
+
+Version 0.3.5: exakte sample-offset Automation, endliche Audiodaten, fortlaufende Hallfahne bei deaktiviertem Effekt, korrekte Enable-Textwerte, Controller-Komponentenstatus und identische Factory-/Bundle-Version. Ein nativer Windows-Test kompiliert den tatsächlichen Processor und prüft PCM-Automation, NaN-Isolation, Bypass und State; GUI nur im Test gelinkt durch Stubs. DAW-/ASIO-Freigabe separat.
