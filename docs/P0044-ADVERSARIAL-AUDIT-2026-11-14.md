@@ -151,3 +151,25 @@ Git-Tree dieses SHA: **50 Einträge = 37 Dateien + 13 Verzeichnisse**. Alle **36
 **Erforderliche weitere, konkrete Nachweise** (keine pauschale weitere PASS-Behauptung): zuerst produktive Host-PCM-/Event-/Invalid-Input-Testorakel samt Mutationsnegativen und der oben genannten Defekt-Regressionsfälle; dann neues exakt gebautes Windows-VST3-Artifact mit Versions- und 125A Plugin Tester Volltest; danach Fender-Studio-Pro-ASIO-Sessions für 5 Parameter/9 UI-Bedienflächen, Automation/State-Recall, reale Audio- und Hörabnahme sowie unabhängige Reviewer-Gegenprüfung. Erst danach darf gemäß `QA/AUDIT-COMPLETENESS-CONTRACT.md` der Status neu beurteilt werden.
 
 **Wichtig:** Die ursprünglichen CI-PASS-Protokolle werden nicht „zurückgenommen“; lediglich ihr tatsächlicher Aussagebereich wird korrekt eingegrenzt.
+
+
+---
+
+## Nachtrag: Echter lokaler 125A Plugin Tester 0.3.2 vom 14.11.2026
+
+Nach Erstellung der ursprünglichen Matrix stellte der Nutzer sechs **tatsächliche lokale Windows-Prüfprotokolle** bereit: QA-Report (JSON und Text), Steinberg Validator, Editor-Lifecycle, I/O/Event und Multi-Instance. Diese aktualisieren die bisherige Aussage **„vollständiger 125A Plugin Tester NOT RUN“** zu **„Tester RUN: WARNING / RELEASE REVIEW WARNINGS“**; die historischen Aussagen oben sind als damaliger Evidenzstand zu lesen. Das installierte Paket liegt unter \`C:\Program Files\Common Files\VST3\Eigene\125A_Retro_Reverb.vst3\`; der Bericht datiert von 2026-11-14 11:26:40 UTC, Tester-Version 0.3.2, Tester-Source SHA \`f053c1d8f858df06231111861550f0c2c69ef179\`. **Tester-Version 0.3.2 ist nicht die Produktversion.** Die installierte Binärdatei wurde hier nicht separat gehasht; Zuordnung zum CI-Artefakt \`890225e\` beruht auf Namen/Klasse, nicht auf bewiesener Binärgleichheit.
+
+**Gesamtstatus: 41 PASS / 4 WARNING / 0 FAIL, exitCode 0; RELEASE = REVIEW WARNINGS, nicht freigegeben.** Die vier gemeldeten Warnungen:
+
+1. **ID 100 Enable – falscher Parameter-Text-Roundtrip:** Angezeigtes \`On\`, normalisiert \`1.000000\` ergibt bei \`getParamValueByString\` unerwartet **\`0.000000\`**. Dies ist ein konkret nachgewiesener Host-Text-Konvertierungsfehler und für das Ausschalten durch Werteingabe relevant.
+2. **Controller-Komponentenzustand:** \`setComponentState\` akzeptierte Component-State nicht. Component \`getState/setState\` und Controller-eigenes \`getState/setState\` bestanden separat; das widerlegt die Warnung nicht.
+3. **Post-Stress-State-Restore:** Eine oder mehrere Restore-Aufrufe wurden zurückgewiesen. Ohne Individualtrace ist die genaue Auslöseeingabe noch nicht bekannt.
+4. **Fresh-Instance-State-Verifikation:** Persistenz/Controller/Lifecycle mit einer oder mehreren Warnungen. Kein belegter Voll-PASS für Projekt-Recall.
+
+**Zusätzliche präzise Befunde:** Im *tatsächlichen* Steinberg-Validator-Protokoll steht bei 32-bit **„Not all points have been read via IParameterChanges“**, obwohl das Testcase \`Succeeded\` meldet. Das stützt die Quellcodefeststellung zu ausgelassenen Parameterevents, ist jedoch keine gemessene PCM-Abweichung. Weiter meldet der Validator für Mix-ID 104 \`getParamValueByString("33")=0.330000\` statt ursprünglicher \`0.333333\`; dies ist für eine bewusst auf ganze Prozent gerundete Anzeige erklärbar, aber kein exakter Roundtrip. Der Validator bestätigt auch die bereits festgestellte Klassenversionsangabe **0.3.2**.
+
+**Ausgeführte positive Windows-Nachweise:** 47/47 Steinberg Validator; 50/50 akzeptierte Sample-Rate-/Blocksize-Setups; Silence, Impulse (peak 0.666667, RMS 0.0294628), DC (peak 0.333333) und Denormal (1004 subnormale Samples) jeweils **finite Ausgabe**; 5 automatable Parameter mit 15 angenommenen Punkten in einem Block; 8 wiederholte Lifecycle-Stresszyklen; 5 vollständig angehängte/abgehängte Windows-Editorzyklen; Mono-/Stereo-Buswechsel; Controller-Isolation von zwei Instanzen (ID 100: erwartet B=1, beobachtet B=1). Gemeldete lokale CPU-Werte für 256 Blöcke @ 48 kHz: mean 18.0516 µs, p95 18.9 µs, p99 31.6 µs, max 34.6 µs, 0 Deadline-Überschreitungen; 32 separat host-getaktete Blöcke: max 168.7 µs, 0 Fristüberschreitungen. **Das sind echte begrenzte Benchmarks, keine ASIO-Freigabe.**
+
+**Nicht ausgeführt / ausdrücklich nicht nachgewiesen:** Editorbericht \`SA01\` meldet \`NOT TESTED\` für Benachrichtigung mehrerer Views; I/O-Bericht \`SA02\` meldet \`NOT TESTED\` für block-partition-Äquivalenz; Multi-Instance-Probe grenzt DSP/Audio und zwei Views ausdrücklich aus. \`Automation stress ... accepted\` beweist nicht, dass die sample-offset-genauen Audioergebnisse stimmen. Auch die reinen finite-/Peak-Audio-Stresstests sind keine unabhängige Freeverb-Impulsantwort-, Wet/Dry- oder musikalische Klangprüfung. DAW und ASIO weiterhin NOT RUN.
+
+**Urteilsänderung gegenüber dem Ursprungsbericht:** 125A Plugin Tester = **AUSGEFÜHRT, WARNING**, nicht \`NOT RUN\`. Die vier Warnungen sind neue konkrete Audit-Blocker, von denen insbesondere die \`Enable\`-Textkonvertierung bereits eindeutig fehlerhaft ist. **FULL AUDIT / RELEASE READY bleibt NO-GO.** Keine Reparatur am Produkt erfolgt durch diesen Nachtrag.
