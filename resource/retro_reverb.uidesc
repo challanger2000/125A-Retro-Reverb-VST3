@@ -35,7 +35,7 @@
     <view class="CTextEdit" control-tag="Mix" origin="624, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
 
     <view class="CTextLabel" origin="794, 167" size="110, 24" title="Enable" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
-    <view class="CView" custom-view-name="Enable" origin="791, 207" size="118, 56"/>
+    <view class="CView" custom-view-name="Enable" origin="787, 201" size="125, 125"/>
     <view class="CTextLabel" origin="789, 330" size="120, 24" title="FREEVERB" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
   </template>
   <control-tags>

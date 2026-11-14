@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(125A_Retro_Reverb VERSION 0.3.2 LANGUAGES CXX)
+project(125A_Retro_Reverb VERSION 0.3.3 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -83,7 +83,7 @@ if(A125_BUILD_VST3)
   set(RETRO_GUI_GENERATED "${CMAKE_BINARY_DIR}/retro_gui_resources")
   file(MAKE_DIRECTORY "${RETRO_GUI_GENERATED}")
 
-  # Local extension of the EXISTING UglyKnob and UglyToggle classes.
+  # Local extension of the EXISTING UglyKnob class.
   # Original Ugly-Reverb-Final repo is pinned and left untouched.
   # At 125px (the master frame size) there is NO downsampling blur.
   file(READ "${UGLY_GUI_ROOT}/source/UglyControls.cpp" RETRO_UGLY_CPP)
@@ -94,14 +94,6 @@ if(A125_BUILD_VST3)
     message(FATAL_ERROR "Original UglyKnob selection changed; refusing unverified GUI patch")
   endif()
   string(REPLACE "${RETRO_KNOB_OLD}" "${RETRO_KNOB_NEW}" RETRO_UGLY_CPP "${RETRO_UGLY_CPP}")
-  # Keep the original UglyToggle interaction; make its chassis silver.
-  set(RETRO_TOGGLE_OLD "fillRound(c,r,r.getHeight()*0.5,{3,6,9,255},{72,86,100,255},1.0);")
-  set(RETRO_TOGGLE_NEW "gradientRound(c,r,r.getHeight()*0.5,{228,235,240,255},{89,103,116,255},{228,236,242,235},1.5);")
-  string(FIND "${RETRO_UGLY_CPP}" "${RETRO_TOGGLE_OLD}" RETRO_TOGGLE_OFFSET)
-  if(RETRO_TOGGLE_OFFSET EQUAL -1)
-    message(FATAL_ERROR "Original UglyToggle appearance changed; refusing unverified GUI patch")
-  endif()
-  string(REPLACE "${RETRO_TOGGLE_OLD}" "${RETRO_TOGGLE_NEW}" RETRO_UGLY_CPP "${RETRO_UGLY_CPP}")
   file(WRITE "${CMAKE_BINARY_DIR}/UglyControlsRetro.cpp" "${RETRO_UGLY_CPP}")
 
   # Reuse Ugly-Reverb's original 101-frame strip generator. Render ONLY
@@ -145,6 +137,7 @@ if(A125_BUILD_VST3)
   smtg_target_add_plugin_resources(125A_Retro_Reverb
     RESOURCES
       resource/retro_reverb.uidesc
+      resource/retro_lever_off_on_125.png
       "${RETRO_GUI_GENERATED}/ugly_knob_125.png"
       "${RETRO_GUI_GENERATED}/ugly_knob_125#2.0x.png")
   target_compile_features(125A_Retro_Reverb PRIVATE cxx_std_23)

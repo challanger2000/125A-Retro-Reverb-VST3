@@ -1,6 +1,9 @@
 #include "retro_processor.hpp"
 #include "UglyControls.h"
 #include "vstgui/lib/cdrawcontext.h"
+#include "vstgui/lib/cbitmap.h"
+#include "vstgui/lib/cresourcedescription.h"
+#include "vstgui/lib/controls/cbuttons.h"
 #include "vstgui/lib/cgradient.h"
 #include "vstgui/lib/cgraphicspath.h"
 #include "vstgui/plugin-bindings/vst3editor.h"
@@ -11,83 +14,8 @@
 namespace a125 {
 using namespace Steinberg;
 namespace {
-// Original UglyToggle handles all interaction and parameter binding. 125A
-// paints only a new raised, polished-silver thumb over the existing switch.
-// This avoids replacing the GUI framework or touching any DSP code.
-// Self-contained 125A polished-silver rocker. Uses VSTGUI only as the
-// underlying plugin control/host event adapter; all artwork is drawn here.
-// Original Ugly Reverb knobs, logo and zoom remain untouched.
-class RetroSilverToggle final : public VSTGUI::COnOffButton {
-public:
-  RetroSilverToggle(const VSTGUI::CRect& rect,VSTGUI::IControlListener* listener,int32_t tag)
-      : VSTGUI::COnOffButton(rect,listener,tag,nullptr) {
-    setTransparency(true);
-    setWantsFocus(true);
-  }
-  RetroSilverToggle(const RetroSilverToggle& other):VSTGUI::COnOffButton(other) {}
-  VSTGUI::CBaseObject* newCopy() const override{return new RetroSilverToggle(*this);}
-  void draw(VSTGUI::CDrawContext* c) override {
-    const auto r=getViewSize();
-    const bool enabled=getValueNormalized()>=0.5;
-    c->setDrawMode(VSTGUI::kAntiAliasing|VSTGUI::kNonIntegralMode);
-    const auto gradientRound=[&](VSTGUI::CRect rect,double radius,
-                                 VSTGUI::CColor top,VSTGUI::CColor bottom,
-                                 VSTGUI::CColor frame,double width) {
-      auto* path=c->createRoundRectGraphicsPath(rect,radius);
-      if(!path)return;
-      if(auto* gradient=VSTGUI::CGradient::create(0.,1.,top,bottom)){
-        c->fillLinearGradient(path,*gradient,rect.getTopLeft(),rect.getBottomLeft(),false);
-        gradient->forget();
-      }
-      c->setFrameColor(frame);
-      c->setLineWidth(width);
-      c->drawGraphicsPath(path,VSTGUI::CDrawContext::kPathStroked);
-      path->forget();
-    };
-    VSTGUI::CRect shadow=r;
-    shadow.offset(1.5,2.0);
-    gradientRound(shadow,shadow.getHeight()*.5,
-                  {0,0,0,140},{0,0,0,20},{0,0,0,0},0.);
-    gradientRound(r,r.getHeight()*.5,
-                  {249,252,255,255},{87,102,118,255},{240,247,252,255},1.5);
-    VSTGUI::CRect track=r;
-    track.inset(3.5,3.5);
-    gradientRound(track,track.getHeight()*.5,
-                  enabled?VSTGUI::CColor{29,47,65,255}:VSTGUI::CColor{16,22,29,255},
-                  enabled?VSTGUI::CColor{12,20,30,255}:VSTGUI::CColor{32,40,50,255},
-                  {113,136,157,255},1.0);
-
-    // A larger 44px chrome globe is deliberately much brighter than the
-    // former matte-grey factory thumb; no photographic skin or resizing.
-    const double d=track.getHeight()-4.;
-    const double cy=track.getCenter().y;
-    const double cx=enabled?(track.right-2.-d*.5):(track.left+2.+d*.5);
-    const VSTGUI::CRect ring(cx-d*.5,cy-d*.5,cx+d*.5,cy+d*.5);
-    gradientRound(ring,d*.5,
-                  {255,255,255,255},{102,118,135,255},{255,255,255,255},1.45);
-    VSTGUI::CRect steel=ring;
-    steel.inset(2.2,2.2);
-    gradientRound(steel,steel.getWidth()*.5,
-                  {152,172,189,255},{47,63,79,255},{215,229,241,255},.8);
-    VSTGUI::CRect silver=ring;
-    silver.inset(4.2,4.2);
-    gradientRound(silver,silver.getWidth()*.5,
-                  {255,255,255,255},{174,190,203,255},{252,254,255,255},.9);
-    // A distinct white light reflection makes SILVER unmistakable at 100%.
-    c->setFillColor({255,255,255,250});
-    c->drawEllipse({cx-d*.22,cy-d*.34,cx+d*.17,cy-d*.17},
-                   VSTGUI::kDrawFilled);
-    c->setFont(VSTGUI::kNormalFont,9.5,VSTGUI::kBoldFace);
-    c->setFontColor(enabled?VSTGUI::CColor{179,224,252,255}
-                           :VSTGUI::CColor{178,192,203,255});
-    VSTGUI::CRect text=track;
-    if(enabled)text.right=ring.left-1.;
-    else text.left=ring.right+1.;
-    c->drawString(VSTGUI::UTF8String(enabled?"ON":"OFF"),text,VSTGUI::kCenterText);
-    setDirty(false);
-  }
-};
-
+// The standard VSTGUI two-state button handles clicks, parameter automation
+// and host notifications. Only its 125x250 transparent lever sprite is custom.
 class RetroFaceplate final : public VSTGUI::CView {
 public:
   explicit RetroFaceplate(const VSTGUI::CRect& r):CView(r){setMouseEnabled(false);}
@@ -152,7 +80,17 @@ VSTGUI::CView* RetroProcessor::createCustomView(VSTGUI::UTF8StringPtr name,
   if(std::strcmp(name,"Damping")==0)return new UglyReverb::UglyKnob(r,editor,kDamping);
   if(std::strcmp(name,"Width")==0)return new UglyReverb::UglyKnob(r,editor,kWidth);
   if(std::strcmp(name,"Mix")==0)return new UglyReverb::UglyKnob(r,editor,kMix);
-  if(std::strcmp(name,"Enable")==0)return new RetroSilverToggle(r,editor,kEnable);
+  if(std::strcmp(name,"Enable")==0) {
+    // OFF (value 0) is the upper 125x125 sprite frame, ON (1) the lower.
+    // VSTGUI COnOffButton performs the frame selection and parameter edits.
+    auto* bitmap=new VSTGUI::CBitmap(VSTGUI::CResourceDescription("retro_lever_off_on_125.png"));
+    if(!bitmap->isLoaded()) { bitmap->forget(); return nullptr; }
+    auto* control=new VSTGUI::COnOffButton(r,editor,kEnable,bitmap);
+    bitmap->forget();
+    control->setTransparency(true);
+    control->setWantsFocus(true);
+    return control;
+  }
   return nullptr;
 }
 tresult PLUGIN_API RetroProcessor::getEditorState(IBStream* stream) {
