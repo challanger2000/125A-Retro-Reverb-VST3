@@ -4,9 +4,9 @@
 Required inputs: two identical MIDI/instrument renders of Virtual Vocaid V1.0:
   dry.wav  : Reverb ON, Mix=0%, no other effects; all other settings identical.
   wet.wav  : Reverb ON, Mix=100%, no other effects; same MIDI and export range.
-The inferred Vocaid/JUCE internal dry gain at Mix=0 is 2.0, so dry/2
-approximates the reverb input. This assumption is part of the measurement,
-NOT proven from audible Vocaid captures. Both WAV exports must be linear PCM.
+The user's actual Virtual Vocaid captures show unity dry at Mix=0,
+so the dry capture is used directly as the candidate input. We do not
+apply any gain normalization. Both WAV exports must be linear PCM.
 """
 import argparse
 import json
@@ -96,14 +96,15 @@ def run(dry,wet,renderer,size,damping,width,output):
     sr2,wet_samples=load_pcm(wet)
     if sr!=sr2:raise ValueError("dry and wet sample rates differ")
     if len(dry_samples)!=len(wet_samples):raise ValueError("dry and wet export lengths differ")
-    # Original static Freeverb mapping: dryLevel = 1-mix, scaledry=2.
-    src=[x*0.5 for x in dry_samples]
+    # Grounded in the uploaded OFF/default/100%-wet captures:
+    # default = OFF + 0.5 * wet100 to floating-point precision.
+    src=dry_samples
     candidate=render(renderer,sr,size,damping,width,1.0,src)
     result=metrics(wet_samples,candidate)
     result.update({"sample_rate":sr,"size":size,"damping":damping,"width":width,
          "reference":"Virtual Vocaid wet=100% external WAV",
-         "candidate":"125A JUCE-compatible DSP from dry=0% / 2",
-         "assumptions":"same source samples, disabled other FX, Vocaid dry path exactly x2",
+         "candidate":"125A original Jezar Freeverb from unmodified dry source",
+         "assumptions":"same source samples, disabled other FX, identical timing",
          "claim":"numeric comparison only, not a proof of identical underlying plugin"})
     if output:
         result["candidate_output_wav"]=str(output)
@@ -118,7 +119,7 @@ def selftest(renderer):
         src=[0.0]*(n*2)
         for i in (300,10000,19920):
             src[2*i]=.12;src[2*i+1]=-.07
-        dry=[x*2 for x in src]
+        dry=list(src)
         wet=render(renderer,sr,.5,.5,1.0,1.0,src)
         save_wav(a/"dry.wav",sr,dry)
         save_wav(a/"wet.wav",sr,wet)

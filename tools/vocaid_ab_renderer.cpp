@@ -1,7 +1,8 @@
 // Offline raw-f32 reference renderer for controlled Virtual Vocaid A/B measurements.
 // INPUT/OUTPUT: little-endian stereo interleaved float32, no WAV header.
 // This CLI never runs inside the VST3 audio callback.
-#include "reference_reverb.hpp"
+#include "revmodel.hpp"
+#include "freeverb_mix.hpp"
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -15,14 +16,16 @@ int main(int argc,char** argv) {
     return 2;
   }
   const double sr=std::atof(argv[1]);
-  a125::VocaidReferenceReverb rv;
-  auto p=rv.controls();
-  p.size=static_cast<float>(std::atof(argv[2]));
-  p.damping=static_cast<float>(std::atof(argv[3]));
-  p.width=static_cast<float>(std::atof(argv[4]));
-  p.mix=static_cast<float>(std::atof(argv[5]));
-  rv.setControls(p); // snap to settled controls before the first sample
-  if(!rv.prepare(sr)) {std::cerr<<"invalid sample rate\n";return 2;}
+  if(sr!=44100.0) {
+    std::cerr<<"The historical Jezar Freeverb tunings are fixed for 44100 Hz; A/B comparison is restricted to this rate.\n";
+    return 2;
+  }
+  revmodel rv;
+  rv.setroomsize(static_cast<float>(std::atof(argv[2])));
+  rv.setdamp(static_cast<float>(std::atof(argv[3])));
+  rv.setwidth(static_cast<float>(std::atof(argv[4])));
+  a125::applyMix(rv,static_cast<float>(std::atof(argv[5])));
+  rv.mute();
   std::ifstream in(argv[6],std::ios::binary|std::ios::ate);
   if(!in){std::cerr<<"failed opening input\n";return 2;}
   const auto size=in.tellg();
@@ -41,13 +44,13 @@ int main(int argc,char** argv) {
     if(!in.read(reinterpret_cast<char*>(data.data()),static_cast<std::streamsize>(take*2*sizeof(float))))
       return 3;
     for(std::size_t i=0;i<take;++i){l[i]=data[2*i];r[i]=data[2*i+1];}
-    rv.processStereo(l.data(),r.data(),ol.data(),orr.data(),take);
+    rv.processreplace(l.data(),r.data(),ol.data(),orr.data(),static_cast<long>(take),1);
     for(std::size_t i=0;i<take;++i){data[2*i]=ol[i];data[2*i+1]=orr[i];}
     out.write(reinterpret_cast<const char*>(data.data()),static_cast<std::streamsize>(take*2*sizeof(float)));
     if(!out)return 3;
     remain-=take;
   }
   std::cout<<"Rendered "<<(static_cast<std::size_t>(size)/(2*sizeof(float)))
-           <<" stereo frames @ "<<sr<<" Hz (candidate reference DSP; not Vocaid capture)\n";
+           <<" stereo frames @ "<<sr<<" Hz (original Jezar Freeverb DSP; not Vocaid capture)\n";
   return 0;
 }

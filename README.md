@@ -1,36 +1,28 @@
-# 125A Retro Reverb – P001
+# 125A Retro Reverb — original Jezar Freeverb VST3 port
 
-Native Windows x64 VST3 based on Jezar's **original public-domain Freeverb** C++ filter network (see `third_party/freeverb/Components`). This is a distinct, independently packaged plugin and a starting point for reproducing the vintage reverb timbre heard in Virtual Vocaid.
+**Windows x64 VST3 · C++23 · Steinberg VST3 SDK 3.8.1 · No JUCE runtime**
 
-**Status (P001): source candidate, NOT a verified Virtual Vocaid clone.** The original filter network is present and regression tests exist. P001 contains one documented reset-only correction to `comb::mute()` so the internal low-pass feedback is cleared. Windows VST3 compilation, host validation and actual Virtual Vocaid A/B output comparisons must be demonstrated by CI and reference renders. No GUI beyond host-provided generic parameter controls in P001.
+This plugin deliberately uses the classic **Freeverb by Jezar at Dreampoint (2000)**. The active stereo DSP is the original public-domain \`revmodel\` from \`third_party/freeverb/Components\`, not a new reverb implementation. There are **no additional filters, predelay, modulation, EQ, saturation, or invented sound-character adjustments**.
 
-## Targets
+**The sole intentional control-law exception:** The user-facing **Mix** knob must follow 125A's rule: **0% = original dry signal exactly at unity gain, no wet; 100% = fully wet, no dry.** Because original Freeverb internally applies a dry gain of 2, the VST3 wrapper calls \`setdry((1-Mix)/2)\` and \`setwet(Mix)\`. The original filter formulas remain unchanged. Switching Mix to zero discards an old wet tail rather than allowing it to reappear when Mix is increased again.
 
-- **Windows x64 VST3 only** (Steinberg SDK 3.8.1, VS2022, C++23)
-- Same original DSP source for a future 125A speech plugin, via the reusable `freeverb_core` target
-- Parameters: Enable, Size, Damping, Width, Mix
-- No unnecessary extra EQ, predelay or modulation until the reference sound is reproduced
+\`Enable\` is a true unity-gain bypass. \`Size\`, \`Damping\`, and \`Width\` call the original setters directly.
 
-## Build
+## Supported audio layouts
 
-Read [START-HERE.md](START-HERE.md) for Windows builds and tests. The build does **not** require JUCE. Use `-DA125_BUILD_VST3=OFF` to test only the Freeverb core without the SDK.
+Stereo → Stereo (the original Freeverb stereo algorithm), Mono → Stereo (duplicate input into original stereo network), Mono → Mono (original left reverberation channel). The original Freeverb mixes L/R for the wet excitation and uses different filter delays for left/right output. Dry stereo channels retain their original separation.
 
-## Fidelity caveats
+## Deliberately original behavior
 
-The original Freeverb tuning assumes 44.1 kHz; at 48/96 kHz its delay lengths must eventually be scaled and then checked against actual Virtual Vocaid output. P001 retains the original numbers deliberately. The **historical** Virtual Vocaid Mix routing appears to use Wet = Mix and Dry = 1 - Mix at the JUCE API level, where the internal dry scale is **2**; a true original 0%-Mix capture might therefore have a 2x dry gain. **125A production behavior intentionally corrects this:** Mix 0% = 0 wet, dry unity (0 dB), no remaining tail; Mix 100% = wet only. The 125A engine sets its final dry gain to 1 - Mix, equivalent to giving JUCE dryLevel = (1 - Mix) / 2. Enable=off also always passes signal unchanged. Historical Vocaid gain remains only a research hypothesis in the external A/B capture script.
+- **Original Freeverb fixed sample-delay lengths** assume 44.1 kHz. This port does **not** alter the delays at 48 or 96 kHz; higher-rate decay time will therefore be shorter in seconds. This is a conscious 1:1-source decision, not a bug fix or alternative reverb model.
+- Freeverb's original Wet scale (3), Damping scale (0.4), Room size scale (0.28) and offset (0.7) remain intact.
+- Minimal compiler compatibility and defined reset/constructor-state corrections are documented in [THIRD_PARTY.md](THIRD_PARTY.md); the musical filter-processing equations are unchanged.
+- No custom GUI yet: host generic parameters are available.
 
-The binary fingerprint of the user-supplied Virtual Vocaid remains a guide; the copyrighted VST3 and samples are not included. No claim of sample-identical sound without an actual measured A/B comparison.
+## Build and tests
 
-## Licenses
+Read [START-HERE.md](START-HERE.md). \`build_windows.bat\` builds the Windows VST3, runs CTest, the Steinberg Validator, and independent 125A Plugin Test Lab P74/P98 in GitHub Actions. The VST3 links only the **\`freeverb_core\`** DSP library; JUCE-like code under \`src/reference_reverb.hpp\` and tests under \`third_party/juce_616\` are archived comparative research and not linked into the plugin.
 
-Jezar's original source explicitly declares public domain. The independently written wrapper is intended for use under the repository's future project license. Steinberg VST3 SDK 3.8.1 is MIT licensed and must be obtained separately. See [THIRD_PARTY.md](THIRD_PARTY.md).
+The offline comparison command in [docs/AUDIO-AB.md](docs/AUDIO-AB.md) tests actual supplied Virtual Vocaid WAVs against the unchanged Jezar Freeverb algorithm at 44.1 kHz, without normalizing away any level mismatch. Klanggleichheit mit Virtual Vocaid ist bis zum erfolgreichen A/B-Vergleich nicht behauptet.
 
-## P002 – Virtual Vocaid reference-mode engine
-
-The actual VST3 effect now uses `src/reference_reverb.hpp`, a standalone C++23 implementation of the **JUCE 6.1.6-style** Freeverb network identified in the original Vocaid binary. It includes 44.1/48/96k sample-rate scaling, 10 ms parameter smoothing, Stereo/Stereo and Mono/Mono or Mono/Stereo routing, and no audio callback heap allocations. The historical Jezar Freeverb remains in `third_party` as a reference but is **not** the active VST3 DSP.
-
-The comparison is **architectural/static**, not yet a verified 1:1 audio reproduction. See `docs/REFERENCE-DSP.md` for evidence and remaining audio A/B gate.
-
-## P002.1 – 125A Mix rule (hard zero)
-
-**Mix 0% = exactly unprocessed dry at 0 dB**, from the very first sample, including when automated from a ringing 100% wet effect. The wet network is cleared on entry into 0%, so switching back on cannot resurrect a stale tail. This is intentionally a **125A behavior override** of JUCE's historical 10 ms smoothed Mix and dry gain law. All nonzero Mix values continue to follow JUCE's wet network and 10 ms smoothing, with the production dry gain normalized to 0..1. Regression tests cover stereo, mono, mono-to-stereo, in-place buffers, tail reset and the JUCE 6.1.6 source-differential comparison with equivalent dry-level input.
+**Current state:** candidate VST3, not a final commercial release; studio/ASIO practical test and GUI remain open.

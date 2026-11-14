@@ -1,6 +1,6 @@
 #pragma once
 #include "public.sdk/source/vst/vstsinglecomponenteffect.h"
-#include "src/reference_reverb.hpp"
+#include "revmodel.hpp"
 
 namespace a125 {
 enum Param : Steinberg::Vst::ParamID {
@@ -29,11 +29,12 @@ public:
   Steinberg::tresult PLUGIN_API setState(Steinberg::IBStream*) override;
 private:
   void apply() noexcept;
-  float enabled_=1.0f;
-  float size_=0.5f;
-  float damping_=0.5f;
-  float width_=1.0f;
-  float mix_=0.33f;
-  VocaidReferenceReverb model_;
+  float enabled_=1.f;
+  float size_=.5f;
+  float damping_=.5f;
+  float width_=1.f;
+  float mix_=1.f/3.f;  // Jezar's initial wet (original had separate dry=0)
+  double sampleRate_=44100.0; // VST host accounting only, NOT a DSP retuning
+  revmodel model_;
 };
 } // namespace a125

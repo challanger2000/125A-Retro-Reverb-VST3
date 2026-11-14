@@ -1,36 +1,27 @@
-# A/B measurement procedure – real Virtual Vocaid vs 125A
+# Offline audio comparison — actual Virtual Vocaid recordings
 
-\`tools/compare_vocaid.py\` and \`vocaid_ab_renderer.exe\` provide a reproducible WAV-to-WAV acoustic comparison. They operate **offline**, on **local** recordings. No Virtual Vocaid DLL or sample bank is uploaded to GitHub.
+The user supplied **One Reverb OFF.wav**, **One Reverb 100.wav**, and **One(1).wav**. The data is stereo, 44.1 kHz, 32-bit float. The 100% wet recording contains a long tail; the dry and default recordings are shorter. These captures are not committed to GitHub.
 
-## Capture requirement (critical)
+The supplied default rendering satisfies **default ≈ OFF + 0.5 × wet100**, with residuals at floating-point rounding scale. Thus **the original Vocaid captures do not support the earlier +6 dB dry hypothesis**. The production 125A Mix rule also requires unity dry at 0%, but that is a separate specification.
 
-Virtual Vocaid is an instrument, not an insertable audio reverb. Feed it the **same MIDI sequence/preset** twice, record at 44,100 Hz/24-bit WAV in a DAW/test host, and save:
-- \`dry.wav\`: Reverb enabled, Mix **0%**, all other reverb controls identical.
-- \`wet.wav\`: Reverb enabled, Mix **100%**, same MIDI and same render length, other effects disabled.
+## Tool
 
-Choose a note with clear attack and a 5+ second tail; export with identical pre-roll and starting sample. Render the whole file twice, including 1 second before the first note to allow parameters to settle. Exact equality of source playback across renders must be checked; random modulation and instrument envelopes can limit achievable match.
-
-## Compare
-
-From a Windows VS2022 build of this repository:
+\`tools/vocaid_ab_renderer.cpp\` links directly to original Jezar \`freeverb_core\` (not the JUCE research engine). Its interface is
 
 \`\`\`bat
-python tools\compare_vocaid.py --renderer build-win\Release\vocaid_ab_renderer.exe --dry dry.wav --wet wet.wav --size 0.5 --damping 0.5 --width 1 --out-wav candidate.wav
+build-win\Release\vocaid_ab_renderer.exe 44100 0.5 0.5 1 1 input.f32 output.f32
 \`\`\`
 
-Output includes correlation, absolute RMS delta, *non-normalized* error RMS, relative error and level difference in dB. The candidate WAV can be auditioned against wet.wav. **No automatic gain compensation, reverb normalization or timing alignment** is performed.
+\`tools/compare_vocaid.py\` accepts matched 44.1kHz 16/24/32-bit integer PCM WAV files:
 
-The inferred JUCE 6.1.6/Vocaid parameter routing uses \`wet=Mix\` and \`dry=1−Mix\`, plus internal \`wetScale=3\`, \`dryScale=2\`. The comparator treats the captured dry=0% audio divided by 2 as the dry source signal. If the instrument has additional gain/mixer processing, this hypothesis may be wrong; the measured discrepancy then tells us what needs tracing.
-
-To check that the measurement pipeline works before recording anything:
 \`\`\`bat
-python tools\compare_vocaid.py --renderer build-win\Release\vocaid_ab_renderer.exe --selftest
+python tools\compare_vocaid.py --renderer build-win\Release\vocaid_ab_renderer.exe --dry "One Reverb OFF.wav" --wet "One Reverb 100.wav" --size 0.5 --damping 0.5 --width 1 --out-wav freeverb-candidate.wav
 \`\`\`
 
-### Current evidence
+**Do not infer an exact numerical preset parameter from a knob image**. Use the Vocaid controls' actual settings for Size/Damping/Width if available; the values above are only example arguments. The comparator does not normalize gain or shift timing. Compare the common overlap (wet100 can be longer than dry) and render extra silence to measure the original tail beyond the dry clip.
 
-Confirmed **by static reverse engineering**: filter table, integer sample-rate scaling, parameters Size/Damping/Width/Wet/Dry and JUCE 6.1.6-style implementation. Confirmed by our own CI: generated DSP test vector and WAV compare pipeline. **Not yet confirmed:** actual input/output WAV audio from Virtual Vocaid. Until such a recording exists, a claimed PCM/audible 1:1 match would be misleading.
+At 48 and 96 kHz, the original 2000 Freeverb uses unchanged delay counts; the A/B tool intentionally limits this measurement to 44.1 kHz to avoid accidental comparisons to differently sampled signals.
 
-## Important separation: original Vocaid vs 125A production mix
+## Acceptance rule
 
-The *original Vocaid* capture method above currently assumes that its internal `dryLevel=1-Mix` flows through JUCE's x2 dry scale and thus divides **original** dry.wav by 2 to infer the source PCM. This is a **research hypothesis**, not our target gain law. The active **125A Retro Reverb** uses a deliberate hard-zero rule: `Mix=0` returns unity-gain dry (0 dB) with no tail, including immediately after a parameter change; `Mix=100%` returns wet only. The comparator's Vocaid-only /2 factor must not be copied back into the 125A production dry path.
+Do **not** claim a 1:1 Virtual Vocaid clone until the audio error has been measured and explained. Matching an algorithm family or the 1116/1139-sample onset alone is insufficient. The only non-original behavior in the production VST3 is the required unity dry Mix law and host adapter.

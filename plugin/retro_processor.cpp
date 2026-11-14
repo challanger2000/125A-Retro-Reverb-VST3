@@ -1,8 +1,11 @@
 #include "retro_processor.hpp"
+#include "src/freeverb_mix.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstring>
+#include <cstdint>
+#include <limits>
 
 #include "base/source/fstreamer.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
@@ -15,10 +18,10 @@ using namespace Steinberg::Vst;
 RetroProcessor::RetroProcessor() = default;
 
 tresult PLUGIN_API RetroProcessor::initialize(FUnknown* context) {
-  auto r=SingleComponentEffect::initialize(context);
-  if(r!=kResultOk) return r;
-  addAudioInput(STR16("Stereo In"), SpeakerArr::kStereo);
-  addAudioOutput(STR16("Stereo Out"), SpeakerArr::kStereo);
+  const auto result=SingleComponentEffect::initialize(context);
+  if(result!=kResultOk) return result;
+  addAudioInput(STR16("Stereo In"),SpeakerArr::kStereo);
+  addAudioOutput(STR16("Stereo Out"),SpeakerArr::kStereo);
   parameters.addParameter(STR16("Enable"),nullptr,1,enabled_,ParameterInfo::kCanAutomate,kEnable);
   parameters.addParameter(STR16("Size"),nullptr,0,size_,ParameterInfo::kCanAutomate,kSize);
   parameters.addParameter(STR16("Damping"),nullptr,0,damping_,ParameterInfo::kCanAutomate,kDamping);
@@ -29,118 +32,125 @@ tresult PLUGIN_API RetroProcessor::initialize(FUnknown* context) {
 }
 
 void RetroProcessor::apply() noexcept {
-  VocaidReferenceReverb::Controls c;
-  c.enabled=(enabled_>=.5f);
-  c.size=size_;
-  c.damping=damping_;
-  c.width=width_;
-  c.mix=mix_;
-  model_.setControls(c);
+  model_.setroomsize(size_);
+  model_.setdamp(damping_);
+  model_.setwidth(width_);
+  applyMix(model_,mix_);
 }
 
 tresult PLUGIN_API RetroProcessor::setBusArrangements(
-  SpeakerArrangement* in, int32 numIn,
-  SpeakerArrangement* out, int32 numOut) {
+  SpeakerArrangement* in,int32 numIn,SpeakerArrangement* out,int32 numOut) {
   if(numIn!=1 || numOut!=1 || !in || !out) return kResultFalse;
-  const int inChannels=SpeakerArr::getChannelCount(in[0]);
-  const int outChannels=SpeakerArr::getChannelCount(out[0]);
-  // Two-channel output from mono speech can preserve the historical stereo spread.
-  if(!((inChannels==2 && outChannels==2) ||
-       (inChannels==1 && outChannels==1) ||
-       (inChannels==1 && outChannels==2))) return kResultFalse;
-  auto* inputBus=FCast<AudioBus>(audioInputs.at(0));
-  auto* outputBus=FCast<AudioBus>(audioOutputs.at(0));
-  if(!inputBus || !outputBus) return kResultFalse;
-  inputBus->setArrangement(in[0]);
-  outputBus->setArrangement(out[0]);
+  const int inputChannels=SpeakerArr::getChannelCount(in[0]);
+  const int outputChannels=SpeakerArr::getChannelCount(out[0]);
+  if(!((inputChannels==2 && outputChannels==2) ||
+       (inputChannels==1 && outputChannels==1) ||
+       (inputChannels==1 && outputChannels==2))) return kResultFalse;
+  if(audioInputs.empty() || audioOutputs.empty())return kResultFalse;
+  auto* inBus=FCast<AudioBus>(audioInputs.at(0));
+  auto* outBus=FCast<AudioBus>(audioOutputs.at(0));
+  if(!inBus || !outBus)return kResultFalse;
+  inBus->setArrangement(in[0]);
+  outBus->setArrangement(out[0]);
   return kResultTrue;
 }
 
 tresult PLUGIN_API RetroProcessor::setupProcessing(ProcessSetup& setup) {
-  if(!model_.prepare(setup.sampleRate)) return kResultFalse; // allocation off audio callback
+  if(!std::isfinite(setup.sampleRate) || setup.sampleRate<=0.0)
+    return kResultFalse;
+  sampleRate_=setup.sampleRate;
+  // Do NOT scale original Jezar Freeverb delay lengths by sample rate.
   return SingleComponentEffect::setupProcessing(setup);
 }
 
 tresult PLUGIN_API RetroProcessor::canProcessSampleSize(int32 size) {
-  return size==kSample32 ? kResultTrue : kResultFalse;
+  return size==kSample32?kResultTrue:kResultFalse;
 }
 
-tresult PLUGIN_API RetroProcessor::setActive(TBool state) {
-  if(state) model_.reset();
-  return SingleComponentEffect::setActive(state);
+tresult PLUGIN_API RetroProcessor::setActive(TBool active) {
+  if(active)model_.mute();
+  return SingleComponentEffect::setActive(active);
 }
 
-tresult PLUGIN_API RetroProcessor::setProcessing(TBool state) {
-  // Steinberg SingleComponentEffect defaults to kNotImplemented.
-  // Independent hosts require an explicit successful state transition.
-  // No heap allocation or reset on the realtime processing transition.
-  return (!state || model_.isReady()) ? kResultOk : kResultFalse;
+tresult PLUGIN_API RetroProcessor::setProcessing(TBool) {
+  // Required by VST3 host contract. No audio-thread allocation.
+  return kResultOk;
 }
 
 uint32 PLUGIN_API RetroProcessor::getTailSamples() {
-  // 15 seconds covers a conservative -60dB tail at maximum room size.
-  return static_cast<uint32>(15.0 * model_.sampleRate());
+  const double frames=std::clamp(sampleRate_*15.0,0.0,static_cast<double>(std::numeric_limits<uint32>::max()));
+  return static_cast<uint32>(frames);
 }
 
 tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
   if(auto* changes=data.inputParameterChanges) {
-    const int32 n=changes->getParameterCount();
-    for(int32 i=0;i<n;++i) {
+    for(int32 i=0;i<changes->getParameterCount();++i) {
       auto* queue=changes->getParameterData(i);
-      if(!queue || queue->getPointCount()<=0)continue;
-      int32 sampleOffset=0;ParamValue value=0;
-      if(queue->getPoint(queue->getPointCount()-1,sampleOffset,value)!=kResultTrue)continue;
+      if(!queue || queue->getPointCount()<=0) continue;
+      int32 offset=0;ParamValue value=0;
+      if(queue->getPoint(queue->getPointCount()-1,offset,value)!=kResultTrue)continue;
       const float v=static_cast<float>(std::clamp(value,0.0,1.0));
-      switch(queue->getParameterId()){
-        case kEnable: enabled_=(v>=.5f)?1.f:0.f;break;
-        case kSize: size_=v;break;
-        case kDamping: damping_=v;break;
-        case kWidth: width_=v;break;
-        case kMix: mix_=v;break;
+      switch(queue->getParameterId()) {
+        case kEnable:enabled_=v>=.5f?1.f:0.f;break;
+        case kSize:size_=v;break;
+        case kDamping:damping_=v;break;
+        case kWidth:width_=v;break;
+        case kMix: {
+          // 0% is a hard "effect off" boundary: discard accumulated wet
+          // samples, never boost the dry path or resurrect a stale tail.
+          if(v==0.f && mix_!=0.f) model_.mute();
+          mix_=v;
+          break;
+        }
         default:break;
       }
     }
     apply();
   }
   if(data.numInputs<1 || data.numOutputs<1 || data.numSamples<=0)return kResultOk;
-  if(data.symbolicSampleSize!=kSample32 || !model_.isReady())return kResultFalse;
-  const auto& input=data.inputs[0];auto& output=data.outputs[0];
-  const int nIn=input.numChannels,nOut=output.numChannels;
-  if(!((nIn==2 && nOut==2)||(nIn==1 && nOut==1)||(nIn==1 && nOut==2)))
-    return kResultFalse;
-  if(!input.channelBuffers32 || !output.channelBuffers32 ||
-     !output.channelBuffers32[0] || (nOut==2 && !output.channelBuffers32[1]))return kResultFalse;
+  if(data.symbolicSampleSize!=kSample32)return kResultFalse;
+  const auto& in=data.inputs[0];auto& out=data.outputs[0];
+  const int nIn=in.numChannels,nOut=out.numChannels;
+  if(!((nIn==2 && nOut==2)||(nIn==1 && nOut==1)||(nIn==1 && nOut==2)))return kResultFalse;
+  if(!in.channelBuffers32 || !out.channelBuffers32 || !out.channelBuffers32[0] ||
+     (nOut==2 && !out.channelBuffers32[1]))return kResultFalse;
 
-  // A silent VST3 channel is not guaranteed to contain zeroed audio memory.
-  // Supply literal zeros, but still render the effect's previously stored tail.
   constexpr int kChunk=256;
-  const std::array<float,kChunk> zeros{};
-  output.silenceFlags=0;
-  for(int offset=0;offset<data.numSamples;offset+=kChunk) {
-    const auto count=static_cast<std::size_t>(std::min(kChunk,data.numSamples-offset));
-    const auto inPtr=[&](int ch)->const float* {
-      if((input.silenceFlags & (uint64{1}<<ch))!=0 || !input.channelBuffers32[ch])
-        return zeros.data();
-      return input.channelBuffers32[ch]+offset;
-    };
-    auto* outL=output.channelBuffers32[0]+offset;
-    if(nIn==2) {
-      model_.processStereo(inPtr(0),inPtr(1),outL,output.channelBuffers32[1]+offset,count);
-    } else if(nOut==2) {
-      model_.processMonoToStereo(inPtr(0),outL,output.channelBuffers32[1]+offset,count);
+  std::array<float,kChunk> leftIn{},rightIn{},leftOut{},rightOut{};
+  const bool bypass=(enabled_<.5f || mix_==0.f);
+  for(int start=0;start<data.numSamples;start+=kChunk) {
+    const int n=std::min(kChunk,data.numSamples-start);
+    // Host silence flags don't guarantee its input memory is zero-filled.
+    for(int k=0;k<n;++k) {
+      const auto sample=[&](int ch)->float {
+        if((in.silenceFlags&(uint64{1}<<ch)) || !in.channelBuffers32[ch])return 0.f;
+        return in.channelBuffers32[ch][start+k];
+      };
+      leftIn[k]=sample(0);
+      rightIn[k]=nIn==2?sample(1):leftIn[k];
+    }
+
+    if(bypass) {
+      // Exact original PCM, no 6 dB boost and no hidden wet at Mix=0.
+      for(int k=0;k<n;++k){leftOut[k]=leftIn[k];rightOut[k]=rightIn[k];}
     } else {
-      model_.processMono(inPtr(0),outL,count);
+      // The ONLY reverberation calculations here are Jezar's original
+      // revmodel::processreplace(), with its unmodified filter equations.
+      model_.processreplace(leftIn.data(),rightIn.data(),
+                            leftOut.data(),rightOut.data(),n,1);
+    }
+    for(int k=0;k<n;++k) {
+      out.channelBuffers32[0][start+k]=leftOut[k];
+      if(nOut==2)out.channelBuffers32[1][start+k]=rightOut[k];
     }
   }
-  // True silence reporting: each rendered output channel is examined.
-  // Avoid forcing silence when Freeverb is still ringing after silent input.
-  output.silenceFlags=0;
+
+  out.silenceFlags=0;
   for(int ch=0;ch<nOut;++ch) {
     bool isSilent=true;
-    for(int i=0;i<data.numSamples;++i) {
-      if(output.channelBuffers32[ch][i]!=0.f) {isSilent=false;break;}
-    }
-    if(isSilent) output.silenceFlags|=(uint64{1}<<ch);
+    for(int k=0;k<data.numSamples;++k)
+      if(out.channelBuffers32[ch][k]!=0.f){isSilent=false;break;}
+    if(isSilent)out.silenceFlags|=uint64{1}<<ch;
   }
   return kResultOk;
 }
@@ -152,7 +162,7 @@ tresult PLUGIN_API RetroProcessor::getState(IBStream* stream) {
   if(!stream)return kInvalidArgument;
   IBStreamer s(stream,kLittleEndian);
   if(!s.writeInt32(0x125A0001))return kResultFalse;
-  for(float v : {enabled_,size_,damping_,width_,mix_})
+  for(float v:{enabled_,size_,damping_,width_,mix_})
     if(!s.writeFloat(v))return kResultFalse;
   return kResultOk;
 }
@@ -161,9 +171,9 @@ tresult PLUGIN_API RetroProcessor::setState(IBStream* stream) {
   if(!stream)return kInvalidArgument;
   IBStreamer s(stream,kLittleEndian);
   int32 version=0;
-  if(!s.readInt32(version) || version!=0x125A0001)return kResultFalse;
+  if(!s.readInt32(version)||version!=0x125A0001)return kResultFalse;
   float values[5]{};
-  for(auto& v:values)if(!s.readFloat(v)||!std::isfinite(v))return kResultFalse;
+  for(float& v:values)if(!s.readFloat(v)||!std::isfinite(v))return kResultFalse;
   enabled_=values[0]>=.5f?1.f:0.f;
   size_=std::clamp(values[1],0.f,1.f);
   damping_=std::clamp(values[2],0.f,1.f);
@@ -175,7 +185,7 @@ tresult PLUGIN_API RetroProcessor::setState(IBStream* stream) {
   setParamNormalized(kWidth,width_);
   setParamNormalized(kMix,mix_);
   apply();
-  model_.reset();
+  model_.mute();
   return kResultOk;
 }
 } // namespace a125
