@@ -15,6 +15,11 @@ jobs:
       - name: Build with pinned SDK
         shell: cmd
         run: call build_windows.bat
+      - name: Verify original Ugly Reverb knob pixels (no downsample blur)
+        shell: pwsh
+        run: |
+          python tests/check_gui_native_assets.py --master external/ugly-gui/resource/fender_amp1.png --strip build-win/retro_gui_resources/ugly_knob_125.png --generator build-win/generate_retro_knob_strips.py --layout resource/retro_reverb.uidesc
+          if ($LASTEXITCODE -ne 0) { throw '125px native-control asset check failed' }
       - name: Offline A/B WAV pipeline self-test
         shell: pwsh
         run: |
