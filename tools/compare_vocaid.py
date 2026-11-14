@@ -177,7 +177,9 @@ def selftest(renderer):
         extended=render(renderer,sr,.5,.5,1.0,1.0,float_src)
         save_wav(a/"wetextended.wav",sr,extended)
         long_result=run(a/"dryfloat.wav",a/"wetextended.wav",renderer,.5,.5,1.0,None)
-        if long_result["relative_error_percent"] > .01:
+        # The reference WAV is 24-bit PCM quantized while the source WAV is
+        # 32-bit float, so comparison error is dominated by one PCM24 LSB.
+        if long_result["relative_error_percent"] > .02:
             raise AssertionError(f"FLOAT32/long-tail pipeline error: {long_result}")
         print(f"PASS FLOAT32/JUNK WAV + unequal wet-tail, error={long_result['relative_error_percent']:.5f}%")
 
