@@ -1,6 +1,6 @@
 # Third-party provenance
 
-The eight files in `third_party/freeverb/Components` are unmodified copies from https://github.com/sinshu/freeverb, which republishes Jezar at Dreampoint's original Freeverb source code (June 2000). The source files explicitly state **public domain**. See original [readme](https://github.com/sinshu/freeverb/blob/main/readme.txt).
+The eight files in `third_party/freeverb/Components` are derived from unmodified upstream copies from https://github.com/sinshu/freeverb, which republishes Jezar at Dreampoint's original Freeverb source code (June 2000). The source files explicitly state **public domain**. **125A exception:** `comb.cpp` additionally resets `filterstore` inside `comb::mute()`; this changes only reset state, not the normal per-sample filter equation. See original [readme](https://github.com/sinshu/freeverb/blob/main/readme.txt).
 
 The Windows VST3 build obtains Steinberg's **VST3 SDK 3.8.1** separately using Git, pinned to `v3.8.1_build_84`. Its MIT license applies to the SDK files. This repository does not bundle SDK files or Vocaid binaries.
 

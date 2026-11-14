@@ -18,7 +18,7 @@ tresult PLUGIN_API RetroProcessor::initialize(FUnknown* context) {
   if (r != kResultOk) return r;
   addAudioInput(STR16("Stereo In"), SpeakerArr::kStereo);
   addAudioOutput(STR16("Stereo Out"), SpeakerArr::kStereo);
-  parameters.addParameter(STR16("Enable"), nullptr, 1, enabled_, ParameterInfo::kCanAutomate | ParameterInfo::kIsBypass, kEnable);
+  parameters.addParameter(STR16("Enable"), nullptr, 1, enabled_, ParameterInfo::kCanAutomate, kEnable);
   parameters.addParameter(STR16("Size"), nullptr, 0, size_, ParameterInfo::kCanAutomate, kSize);
   parameters.addParameter(STR16("Damping"), nullptr, 0, damping_, ParameterInfo::kCanAutomate, kDamping);
   parameters.addParameter(STR16("Width"), nullptr, 0, width_, ParameterInfo::kCanAutomate, kWidth);

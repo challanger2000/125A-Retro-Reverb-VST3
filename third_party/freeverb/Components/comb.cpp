@@ -22,6 +22,9 @@ void comb::mute()
 {
 	for (int i=0; i<bufsize; i++)
 		buffer[i]=0;
+	// 125A: reset low-pass feedback memory for deterministic mute/reset.
+	// This is deliberately the only upstream DSP modification in P001.
+	filterstore=0.0f;
 }
 
 void comb::setdamp(float val) 

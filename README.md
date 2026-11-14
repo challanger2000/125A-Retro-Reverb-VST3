@@ -2,7 +2,7 @@
 
 Native Windows x64 VST3 based on Jezar's **original public-domain Freeverb** C++ filter network (see `third_party/freeverb/Components`). This is a distinct, independently packaged plugin and a starting point for reproducing the vintage reverb timbre heard in Virtual Vocaid.
 
-**Status (P001): source candidate, NOT a verified Virtual Vocaid clone.** The original filter network is present and regression tests exist. Windows VST3 compilation, host validation and actual Virtual Vocaid A/B output comparisons must be demonstrated by CI and reference renders. No GUI beyond host-provided generic parameter controls in P001.
+**Status (P001): source candidate, NOT a verified Virtual Vocaid clone.** The original filter network is present and regression tests exist. P001 contains one documented reset-only correction to `comb::mute()` so the internal low-pass feedback is cleared. Windows VST3 compilation, host validation and actual Virtual Vocaid A/B output comparisons must be demonstrated by CI and reference renders. No GUI beyond host-provided generic parameter controls in P001.
 
 ## Targets
 
