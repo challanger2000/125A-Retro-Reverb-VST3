@@ -17,7 +17,7 @@ Read [START-HERE.md](START-HERE.md) for Windows builds and tests. The build does
 
 ## Fidelity caveats
 
-The original Freeverb tuning assumes 44.1 kHz; at 48/96 kHz its delay lengths must eventually be scaled and then checked against actual Virtual Vocaid output. P001 retains the original numbers deliberately. The reference Mix routing sets Wet = Mix, Dry = 1 - Mix at the Freeverb API level, where the underlying wet and dry scales are **3** and **2**, respectively. Therefore 0% Mix yields 2x dry amplitude: this is a *reference-mode hypothesis*, not a recommended production bypass rule. Enable=off always passes signal unchanged.
+The original Freeverb tuning assumes 44.1 kHz; at 48/96 kHz its delay lengths must eventually be scaled and then checked against actual Virtual Vocaid output. P001 retains the original numbers deliberately. The **historical** Virtual Vocaid Mix routing appears to use Wet = Mix and Dry = 1 - Mix at the JUCE API level, where the internal dry scale is **2**; a true original 0%-Mix capture might therefore have a 2x dry gain. **125A production behavior intentionally corrects this:** Mix 0% = 0 wet, dry unity (0 dB), no remaining tail; Mix 100% = wet only. The 125A engine sets its final dry gain to 1 - Mix, equivalent to giving JUCE dryLevel = (1 - Mix) / 2. Enable=off also always passes signal unchanged. Historical Vocaid gain remains only a research hypothesis in the external A/B capture script.
 
 The binary fingerprint of the user-supplied Virtual Vocaid remains a guide; the copyrighted VST3 and samples are not included. No claim of sample-identical sound without an actual measured A/B comparison.
 
@@ -30,3 +30,7 @@ Jezar's original source explicitly declares public domain. The independently wri
 The actual VST3 effect now uses `src/reference_reverb.hpp`, a standalone C++23 implementation of the **JUCE 6.1.6-style** Freeverb network identified in the original Vocaid binary. It includes 44.1/48/96k sample-rate scaling, 10 ms parameter smoothing, Stereo/Stereo and Mono/Mono or Mono/Stereo routing, and no audio callback heap allocations. The historical Jezar Freeverb remains in `third_party` as a reference but is **not** the active VST3 DSP.
 
 The comparison is **architectural/static**, not yet a verified 1:1 audio reproduction. See `docs/REFERENCE-DSP.md` for evidence and remaining audio A/B gate.
+
+## P002.1 – 125A Mix rule (hard zero)
+
+**Mix 0% = exactly unprocessed dry at 0 dB**, from the very first sample, including when automated from a ringing 100% wet effect. The wet network is cleared on entry into 0%, so switching back on cannot resurrect a stale tail. This is intentionally a **125A behavior override** of JUCE's historical 10 ms smoothed Mix and dry gain law. All nonzero Mix values continue to follow JUCE's wet network and 10 ms smoothing, with the production dry gain normalized to 0..1. Regression tests cover stereo, mono, mono-to-stereo, in-place buffers, tail reset and the JUCE 6.1.6 source-differential comparison with equivalent dry-level input.

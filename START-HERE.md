@@ -43,3 +43,7 @@ Compare actual impulse responses at matching Size/Damping/Width/Mix and 44.1 kHz
 The Windows CI checks out a pinned SHA of `challanger2000/125A-Plugin-Test-Lab` and builds the independent native `TestLabGUI`, `TestLabHost` and `TestLabStateStress` executables. The shared P74 pipeline uses the real source-built effect VST3 without changing its source, performs read-only ABI discovery followed by an **explicitly invoked** native audio/state/stress technical baseline, and fails unless `TECHNICAL_BASELINE_PASS` is independently confirmed. No GUI clicks, live ASIO or commercial DAW tests are implied. See `external/test-lab/docs/P98-STEREO-EFFECT-INPUT-STRESS.md`.
 
 P002 also runs an actual copy of the **ISC-licensed JUCE 6.1.6 Reverb source** as a test-only golden reference, reporting samplewise comparisons at multiple rates. Neither the original Virtual Vocaid DLL nor its sample banks are committed to GitHub.
+
+## P002.1 correction – 0% really means off
+
+0% Mix bypasses the wet network and outputs **unaltered unity-gain dry**; it is NOT the +6.02 dB historical Freeverb dry mapping. Changing Mix to 0% clears the old effect tail instantly and avoids a 10 ms smoothing residue. Tests enforce the hard-zero behavior at stereo, mono and mono-to-stereo routes. At other Mix values, compare against JUCE 6.1.6 using `dryLevel = (1-Mix)/2` to cancel the original x2 dry multiplier. Our explicit user-facing Mix rule has priority over presumed Virtual Vocaid internal gain choices.

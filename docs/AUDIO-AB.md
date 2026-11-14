@@ -30,3 +30,7 @@ python tools\compare_vocaid.py --renderer build-win\Release\vocaid_ab_renderer.e
 ### Current evidence
 
 Confirmed **by static reverse engineering**: filter table, integer sample-rate scaling, parameters Size/Damping/Width/Wet/Dry and JUCE 6.1.6-style implementation. Confirmed by our own CI: generated DSP test vector and WAV compare pipeline. **Not yet confirmed:** actual input/output WAV audio from Virtual Vocaid. Until such a recording exists, a claimed PCM/audible 1:1 match would be misleading.
+
+## Important separation: original Vocaid vs 125A production mix
+
+The *original Vocaid* capture method above currently assumes that its internal `dryLevel=1-Mix` flows through JUCE's x2 dry scale and thus divides **original** dry.wav by 2 to infer the source PCM. This is a **research hypothesis**, not our target gain law. The active **125A Retro Reverb** uses a deliberate hard-zero rule: `Mix=0` returns unity-gain dry (0 dB) with no tail, including immediately after a parameter change; `Mix=100%` returns wet only. The comparator's Vocaid-only /2 factor must not be copied back into the 125A production dry path.

@@ -23,10 +23,46 @@ static void testGainLaw() {
     CHECK(r.prepare(44100)); // default/initial params are snapped, not ramped
     float l[4]={.25f,-.125f,.6f,-.7f},rr[4]={-.1f,.5f,.25f,0.f},ol[4]{},orr[4]{};
     r.processStereo(l,rr,ol,orr,4);
-    for(int i=0;i<4;++i){CHECK(ol[i]==l[i]*2.f);CHECK(orr[i]==rr[i]*2.f);}
+    for(int i=0;i<4;++i){CHECK(ol[i]==l[i]);CHECK(orr[i]==rr[i]);}
     p.enabled=false;r.setControls(p);
     r.processStereo(l,rr,ol,orr,4);
     for(int i=0;i<4;++i){CHECK(ol[i]==l[i]);CHECK(orr[i]==rr[i]);}
+}
+static void testZeroMixHardBoundary() {
+    // First create a real ringing tail; 0% must immediately discard it.
+    VocaidReferenceReverb r;
+    CHECK(r.prepare(44100));
+    auto p=r.controls();p.mix=1.f;p.size=.8f;p.width=1.f;r.setControls(p);
+    constexpr std::size_t n=22000;
+    std::vector<float> inL(n,0.f),inR(n,0.f),ol(n,0.f),orr(n,0.f);
+    inL[0]=.8f;inR[0]=.4f;
+    r.processStereo(inL.data(),inR.data(),ol.data(),orr.data(),n);
+    bool hasTail=false;
+    for(std::size_t i=3000;i<n;++i)
+        hasTail|=(ol[i]!=0.f || orr[i]!=0.f);
+    CHECK(hasTail);
+
+    p.mix=0.f;r.setControls(p);
+    float xL[16]{.1f,-.25f,.9f,-1.f,.23f,.48f}, xR[16]{-.15f,.5f,-.9f,1.f,-.7f};
+    float yL[16]{},yR[16]{};
+    r.processStereo(xL,xR,yL,yR,16);
+    for(int i=0;i<16;++i){CHECK(yL[i]==xL[i]);CHECK(yR[i]==xR[i]);}
+    // All input/output variants, including in-place.
+    r.processStereo(xL,xR,xL,xR,16);
+    for(int i=0;i<16;++i){CHECK(yL[i]==xL[i]);CHECK(yR[i]==xR[i]);}
+    float mono[16]{.8f,-.25f,.3f}, monoL[16]{},monoR[16]{};
+    r.processMonoToStereo(mono,monoL,monoR,16);
+    for(int i=0;i<16;++i){CHECK(monoL[i]==mono[i]);CHECK(monoR[i]==mono[i]);}
+    r.processMono(mono,mono,16);
+    CHECK(mono[0]==.8f && mono[1]==-.25f && mono[2]==.3f);
+
+    // Switching back on may not resurrect the old reverb tail.
+    p.mix=1.f;r.setControls(p);
+    float z[1024]{},a[1024]{},b[1024]{};
+    for(int block=0;block<10;++block) {
+        r.processStereo(z,z,a,b,1024);
+        for(int i=0;i<1024;++i){CHECK(a[i]==0.f);CHECK(b[i]==0.f);}
+    }
 }
 static void testRateAndStereoOnset() {
     for(const int sr : {44100,48000,96000}) {
@@ -108,6 +144,6 @@ static void testMonoAndZeroAllocation() {
     CHECK(src[0]==.25f && src[1]==.5f && src[2]==-.8f);
 }
 int main() {
- testGainLaw();testRateAndStereoOnset();testPartitionAndReset();testMonoAndZeroAllocation();testValidatorSampleRates();
- std::puts("PASS: JUCE 6.1.6 rate scaling at 44.1/48/96, wet/dry law, stereo, smooth, deterministic partition, mono-to-stereo, 1200 allocation-free blocks");
+ testGainLaw();testZeroMixHardBoundary();testRateAndStereoOnset();testPartitionAndReset();testMonoAndZeroAllocation();testValidatorSampleRates();
+ std::puts("PASS: 125A hard 0% Mix unity (including old tail), rate scaling, stereo, smooth, mono, 1200 allocation-free blocks");
 }

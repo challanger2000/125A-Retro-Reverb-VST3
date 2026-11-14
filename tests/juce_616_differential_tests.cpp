@@ -19,7 +19,9 @@ static float inputValue() noexcept {
 static void setBoth(juce::Reverb& original,a125::VocaidReferenceReverb& ours,
                     float size,float damp,float width,float mix) {
     juce::Reverb::Parameters a;
-    a.roomSize=size;a.damping=damp;a.width=width;a.wetLevel=mix;a.dryLevel=1.f-mix;
+    // 125A presentation law: dry output is unity at 0% Mix; JUCE's
+    // original kernel internally multiplies dryLevel by two.
+    a.roomSize=size;a.damping=damp;a.width=width;a.wetLevel=mix;a.dryLevel=(1.f-mix)*.5f;
     original.setParameters(a);
     auto b=ours.controls();
     b.size=size;b.damping=damp;b.width=width;b.mix=mix;

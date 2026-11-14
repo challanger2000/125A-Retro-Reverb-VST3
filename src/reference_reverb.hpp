@@ -64,10 +64,18 @@ public:
         controls.damping = sanitize(controls.damping);
         controls.width = sanitize(controls.width);
         controls.mix = sanitize(controls.mix);
-        if (controls_.enabled != controls.enabled)
+        const bool zeroMix = controls.mix == 0.f;
+        // Zero is a hard musical boundary: 0% = dry unity, no residual wet
+        // or 10 ms smoothing tail. Clear stale reverb when entering zero.
+        if (controls_.enabled != controls.enabled || (zeroMix && controls_.mix != 0.f))
             reset();
         controls_ = controls;
         updateTargets();
+        if (zeroMix) {
+            dry_.snap(1.f);
+            wetSame_.snap(0.f);
+            wetCross_.snap(0.f);
+        }
     }
 
     [[nodiscard]] Controls controls() const noexcept { return controls_; }
@@ -89,7 +97,7 @@ public:
     // All processing below is allocation-free.
     void processStereo(const float* inL, const float* inR, float* outL, float* outR, std::size_t n) noexcept {
         if(!ready_ || !inL || !inR || !outL || !outR) return;
-        if(!controls_.enabled) {
+        if(!controls_.enabled || controls_.mix == 0.f) {
             for(std::size_t i=0;i<n;++i) {const float l=inL[i],r=inR[i];outL[i]=l;outR[i]=r;}
             return;
         }
@@ -107,7 +115,7 @@ public:
     // Speaker layout 1→2 for mono microphone tracks, preserving stereo diffusion.
     void processMonoToStereo(const float* input, float* outL, float* outR, std::size_t n) noexcept {
         if(!ready_ || !input || !outL || !outR) return;
-        if(!controls_.enabled) {
+        if(!controls_.enabled || controls_.mix == 0.f) {
             for(std::size_t i=0;i<n;++i){const float x=input[i];outL[i]=x;outR[i]=x;}
             return;
         }
@@ -125,7 +133,7 @@ public:
     // JUCE processMono equivalent: the left filter bank only.
     void processMono(const float* input, float* output, std::size_t n) noexcept {
         if(!ready_ || !input || !output) return;
-        if(!controls_.enabled) {
+        if(!controls_.enabled || controls_.mix == 0.f) {
             for(std::size_t i=0;i<n;++i)output[i]=input[i];
             return;
         }
@@ -144,6 +152,7 @@ private:
         float current=0.f,target=0.f,step=0.f;
         int steps=0,remaining=0;
         void reset(int n) noexcept {steps=n;current=target;remaining=0;step=0.f;}
+        void snap(float x) noexcept {current=target=x;remaining=0;step=0.f;}
         void set(float x) noexcept {
             if(x==target) return;
             target=x;
@@ -198,7 +207,9 @@ private:
     }
     void updateTargets() noexcept {
         const float wet=controls_.mix*3.f; // JUCE wetScaleFactor
-        dry_.set((1.f-controls_.mix)*2.f); // observed Vocaid wet/dry mapping, JUCE dryScaleFactor
+        // The JUCE internal dry x2 is a historical gain law, NOT ours:
+        // 125A 0% Mix must equal an unmodified 0 dB dry signal.
+        dry_.set(1.f-controls_.mix);
         wetSame_.set(.5f*wet*(1.f+controls_.width));
         wetCross_.set(.5f*wet*(1.f-controls_.width));
         damping_.set(controls_.damping*.4f);
