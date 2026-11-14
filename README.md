@@ -17,7 +17,7 @@ Stereo → stereo, mono → stereo and mono → mono are supported in **32-bit f
 
 ## GUI
 
-Fixed **930 × 410 px** VSTGUI editor, **four 125 px UglyKnob controls** from [125A Ugly Reverb Final](https://github.com/challanger2000/125A-Ugly-Reverb-Final), pinned at `631c79b5fddfb19b916d927f0918134576a3a031`. The Enable switch uses a transparent two-state PNG and VSTGUI `COnOffButton`. **No zoom UI.** The other plugin's DSP is not linked.
+Fixed **930 × 410 px** VSTGUI editor, **four 125 px UglyKnob controls** from [125A Ugly Reverb Final](https://github.com/challanger2000/125A-Ugly-Reverb-Final), pinned at `631c79b5fddfb19b916d927f0918134576a3a031`. The Enable switch uses a transparent two-state PNG and VSTGUI `COnOffButton`. **No zoom UI.** Primary Size/Damping/Width/Mix/Enable labels use explicit **20-unit bold** VSTGUI fonts; numeric values use **18-unit bold** fonts. These avoid reliance on the small host default at fixed 100% size; control/knob geometry remains unchanged. The other plugin's DSP is not linked.
 
 ## Building / verification
 

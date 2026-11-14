@@ -9,35 +9,42 @@
     <color name="DisplayText" rgba="#dce9f3ff"/>
     <color name="Edge" rgba="#31506aff"/>
   </colors>
+  <fonts>
+    <!-- Named fonts make labels legible in the fixed 100% editor without altering DSP or hit boxes. -->
+    <font name="RetroControlLabel" font-name="Arial" size="20" bold="true" italic="false"/>
+    <font name="RetroValue" font-name="Arial" size="18" bold="true" italic="false"/>
+    <font name="RetroSecondaryLabel" font-name="Arial" size="16" bold="true" italic="false"/>
+    <font name="RetroSwitchState" font-name="Arial" size="15" bold="true" italic="false"/>
+  </fonts>
   <template background-color="Background" class="CViewContainer" maxSize="930, 410" minSize="930, 410" mouse-enabled="true" name="view" opacity="1" origin="0, 0" size="930, 410" transparent="false">
     <view class="CView" custom-view-name="RetroFaceplate" origin="0, 0" size="930, 410" mouse-enabled="false"/>
     <view class="CView" custom-view-name="BrandLogo" origin="26, 15" size="124, 62" mouse-enabled="false"/>
     <view class="CTextLabel" origin="283, 20" size="370, 32" title="125A RETRO REVERB" transparent="true" back-color="Background" font="~ NormalFontBig" font-color="Text" frame-width="0" text-alignment="center"/>
     <view class="CTextLabel" origin="282, 53" size="370, 17" title="ORIGINAL FREEVERB / 2000" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
-    <view class="CTextLabel" origin="800, 121" size="100, 24" title="MASTER" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="800, 121" size="100, 24" title="MASTER" transparent="true" back-color="Background" font="RetroSecondaryLabel" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
 
-    <view class="CTextLabel" origin="56, 143" size="125, 24" title="Size" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CTextLabel" origin="56, 143" size="125, 24" title="Size" font="RetroControlLabel" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
     <view class="CView" custom-view-name="Size" origin="56, 176" size="125, 125"/>
-    <view class="CTextEdit" control-tag="Size" origin="78, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+    <view class="CTextEdit" control-tag="Size" origin="78, 320" size="82, 30" font="RetroValue" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
 
-    <view class="CTextLabel" origin="238, 143" size="125, 24" title="Damping" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CTextLabel" origin="238, 143" size="125, 24" title="Damping" font="RetroControlLabel" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
     <view class="CView" custom-view-name="Damping" origin="238, 176" size="125, 125"/>
-    <view class="CTextEdit" control-tag="Damping" origin="260, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+    <view class="CTextEdit" control-tag="Damping" origin="260, 320" size="82, 30" font="RetroValue" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
 
-    <view class="CTextLabel" origin="420, 143" size="125, 24" title="Width" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CTextLabel" origin="420, 143" size="125, 24" title="Width" font="RetroControlLabel" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
     <view class="CView" custom-view-name="Width" origin="420, 176" size="125, 125"/>
-    <view class="CTextEdit" control-tag="Width" origin="442, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+    <view class="CTextEdit" control-tag="Width" origin="442, 320" size="82, 30" font="RetroValue" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
 
-    <view class="CTextLabel" origin="602, 143" size="125, 24" title="Mix" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CTextLabel" origin="602, 143" size="125, 24" title="Mix" font="RetroControlLabel" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
     <view class="CView" custom-view-name="Mix" origin="602, 176" size="125, 125"/>
-    <view class="CTextEdit" control-tag="Mix" origin="624, 320" size="82, 30" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
+    <view class="CTextEdit" control-tag="Mix" origin="624, 320" size="82, 30" font="RetroValue" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="5" text-alignment="center"/>
 
-    <view class="CTextLabel" origin="794, 167" size="110, 24" title="Enable" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CTextLabel" origin="794, 167" size="110, 24" title="Enable" font="RetroControlLabel" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
     <view class="CView" custom-view-name="Enable" origin="787, 201" size="125, 125"/>
     <!-- Lever up = ON; lever down = OFF. Text is outside the artwork and never intercepts mouse events. -->
-    <view class="CTextLabel" origin="819, 195" size="60, 18" title="ON" mouse-enabled="false" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
-    <view class="CTextLabel" origin="819, 324" size="60, 18" title="OFF" mouse-enabled="false" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
-    <view class="CTextLabel" origin="789, 358" size="120, 22" title="FREEVERB" mouse-enabled="false" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="819, 195" size="60, 18" title="ON" mouse-enabled="false" transparent="true" back-color="Background" font="RetroSwitchState" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="819, 324" size="60, 18" title="OFF" mouse-enabled="false" transparent="true" back-color="Background" font="RetroSwitchState" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="789, 358" size="120, 22" title="FREEVERB" mouse-enabled="false" transparent="true" back-color="Background" font="RetroSecondaryLabel" font-color="Muted" frame-width="0" text-alignment="center"/>
   </template>
   <control-tags>
     <control-tag name="Enable" tag="100"/>
