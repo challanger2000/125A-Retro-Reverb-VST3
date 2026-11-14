@@ -1,0 +1,38 @@
+cmake_minimum_required(VERSION 3.25)
+project(A125_Retro_Reverb VERSION 0.1.0 LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_library(freeverb_core STATIC
+  third_party/freeverb/Components/allpass.cpp
+  third_party/freeverb/Components/comb.cpp
+  third_party/freeverb/Components/revmodel.cpp)
+target_include_directories(freeverb_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/freeverb/Components")
+set_target_properties(freeverb_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+enable_testing()
+add_executable(reverb_tests tests/reverb_tests.cpp)
+target_link_libraries(reverb_tests PRIVATE freeverb_core)
+add_test(NAME reverb_core_tests COMMAND reverb_tests)
+
+option(A125_BUILD_VST3 "Build the native Windows VST3 (Steinberg SDK)" OFF)
+if(A125_BUILD_VST3)
+  if(NOT WIN32)
+    message(FATAL_ERROR "This project only produces Windows-x64 VST3 plugins")
+  endif()
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/vst3sdk/CMakeLists.txt")
+    message(FATAL_ERROR "Clone the pinned Steinberg VST3 SDK with submodules into external/vst3sdk first; see START-HERE.md")
+  endif()
+  set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(SMTG_ENABLE_VSTGUI_SUPPORT OFF CACHE BOOL "" FORCE)
+  set(SMTG_CREATE_PLUGIN_LINK OFF CACHE BOOL "" FORCE)
+  add_subdirectory(external/vst3sdk "${CMAKE_BINARY_DIR}/vst3sdk")
+  smtg_add_vst3plugin(A125_Retro_Reverb
+    plugin/retro_processor.cpp
+    plugin/retro_processor.hpp
+    plugin/factory.cpp)
+  target_include_directories(A125_Retro_Reverb PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  target_link_libraries(A125_Retro_Reverb PRIVATE sdk freeverb_core)
+  target_compile_features(A125_Retro_Reverb PRIVATE cxx_std_23)
+endif()

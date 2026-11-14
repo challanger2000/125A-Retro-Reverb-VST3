@@ -1,2 +1,26 @@
-# 125A-Retro-Reverb-VST3
-Windows x64 VST3 reverb based on Jezar's original Freeverb algorithm, aiming to recreate the distinctive vintage reverb sound. Shared DSP core for the 125A speech synthesizer.
+# 125A Retro Reverb – P001
+
+Native Windows x64 VST3 based on Jezar's **original public-domain Freeverb** C++ filter network (see `third_party/freeverb/Components`). This is a distinct, independently packaged plugin and a starting point for reproducing the vintage reverb timbre heard in Virtual Vocaid.
+
+**Status (P001): source candidate, NOT a verified Virtual Vocaid clone.** The original filter network is present and regression tests exist. Windows VST3 compilation, host validation and actual Virtual Vocaid A/B output comparisons must be demonstrated by CI and reference renders. No GUI beyond host-provided generic parameter controls in P001.
+
+## Targets
+
+- **Windows x64 VST3 only** (Steinberg SDK 3.8.1, VS2022, C++23)
+- Same original DSP source for a future 125A speech plugin, via the reusable `freeverb_core` target
+- Parameters: Enable, Size, Damping, Width, Mix
+- No unnecessary extra EQ, predelay or modulation until the reference sound is reproduced
+
+## Build
+
+Read [START-HERE.md](START-HERE.md) for Windows builds and tests. The build does **not** require JUCE. Use `-DA125_BUILD_VST3=OFF` to test only the Freeverb core without the SDK.
+
+## Fidelity caveats
+
+The original Freeverb tuning assumes 44.1 kHz; at 48/96 kHz its delay lengths must eventually be scaled and then checked against actual Virtual Vocaid output. P001 retains the original numbers deliberately. The reference Mix routing sets Wet = Mix, Dry = 1 - Mix at the Freeverb API level, where the underlying wet and dry scales are **3** and **2**, respectively. Therefore 0% Mix yields 2x dry amplitude: this is a *reference-mode hypothesis*, not a recommended production bypass rule. Enable=off always passes signal unchanged.
+
+The binary fingerprint of the user-supplied Virtual Vocaid remains a guide; the copyrighted VST3 and samples are not included. No claim of sample-identical sound without an actual measured A/B comparison.
+
+## Licenses
+
+Jezar's original source explicitly declares public domain. The independently written wrapper is intended for use under the repository's future project license. Steinberg VST3 SDK 3.8.1 is MIT licensed and must be obtained separately. See [THIRD_PARTY.md](THIRD_PARTY.md).
