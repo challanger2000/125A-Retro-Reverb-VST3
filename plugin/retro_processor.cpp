@@ -70,6 +70,13 @@ tresult PLUGIN_API RetroProcessor::setActive(TBool state) {
   return SingleComponentEffect::setActive(state);
 }
 
+tresult PLUGIN_API RetroProcessor::setProcessing(TBool state) {
+  // Steinberg SingleComponentEffect defaults to kNotImplemented.
+  // Independent hosts require an explicit successful state transition.
+  // No heap allocation or reset on the realtime processing transition.
+  return (!state || model_.isReady()) ? kResultOk : kResultFalse;
+}
+
 uint32 PLUGIN_API RetroProcessor::getTailSamples() {
   // 15 seconds covers a conservative -60dB tail at maximum room size.
   return static_cast<uint32>(15.0 * model_.sampleRate());

@@ -20,6 +20,7 @@ public:
   Steinberg::tresult PLUGIN_API setupProcessing(Steinberg::Vst::ProcessSetup&) override;
   Steinberg::tresult PLUGIN_API canProcessSampleSize(Steinberg::int32) override;
   Steinberg::tresult PLUGIN_API setActive(Steinberg::TBool) override;
+  Steinberg::tresult PLUGIN_API setProcessing(Steinberg::TBool) override;
   Steinberg::tresult PLUGIN_API process(Steinberg::Vst::ProcessData&) override;
   Steinberg::uint32 PLUGIN_API getTailSamples() override;
   Steinberg::tresult PLUGIN_API getEditorState(Steinberg::IBStream*) override;
