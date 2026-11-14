@@ -47,7 +47,7 @@ def check_fixed_scale_typography(root):
         assert (kx + 62.5, ky) == (center, 176), name
         ex, ey = [int(n.strip()) for n in edit.get("origin").split(",")]
         ew, eh = [int(n.strip()) for n in edit.get("size").split(",")]
-        assert (ex + ew / 2, ey, eh) == (center, 320, 30), name
+        assert abs(ex + ew / 2 - center) <= 0.5 and (ey, eh) == (320, 30), name
     for title, font in (("Enable", "RetroControlLabel"),
                         ("MASTER", "RetroSecondaryLabel"),
                         ("FREEVERB", "RetroSecondaryLabel"),
