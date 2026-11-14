@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vstgui-ui-description version="1">
+  <colors>
+    <color name="Background" rgba="#05070aff"/>
+    <color name="Text" rgba="#e7edf3ff"/>
+    <color name="Muted" rgba="#9aaebeff"/>
+    <color name="PanelTitle" rgba="#bed6eaff"/>
+    <color name="Display" rgba="#07111aff"/>
+    <color name="DisplayText" rgba="#dce9f3ff"/>
+    <color name="Edge" rgba="#31506aff"/>
+  </colors>
+  <template background-color="Background" class="CViewContainer" maxSize="650, 298" minSize="650, 298" mouse-enabled="true" name="view" opacity="1" origin="0, 0" size="650, 298" transparent="false">
+    <view class="CView" custom-view-name="RetroFaceplate" origin="0, 0" size="650, 298" mouse-enabled="false"/>
+    <view class="CView" custom-view-name="BrandLogo" origin="16, 10" size="88, 45" mouse-enabled="false"/>
+    <view class="CTextLabel" origin="185, 13" size="280, 26" title="125A RETRO REVERB" transparent="true" back-color="Background" font="~ NormalFontBig" font-color="Text" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="185, 40" size="280, 17" title="ORIGINAL FREEVERB / 2000" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="543, 18" size="42, 20" title="GUI" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="right"/>
+    <view class="CView" custom-view-name="GuiZoom" origin="590, 13" size="48, 26"/>
+    <view class="CTextLabel" origin="32, 94" size="225, 18" title="REVERB ENGINE" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0"/>
+    <view class="CTextLabel" origin="543, 94" size="85, 18" title="MASTER" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="PanelTitle" frame-width="0" text-alignment="center"/>
+    <view class="CTextLabel" origin="29, 125" size="90, 17" title="Size" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Size" origin="41, 146" size="66, 66"/>
+    <view class="CTextEdit" control-tag="Size" origin="44, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
+    <view class="CTextLabel" origin="155, 125" size="90, 17" title="Damping" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Damping" origin="167, 146" size="66, 66"/>
+    <view class="CTextEdit" control-tag="Damping" origin="170, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
+    <view class="CTextLabel" origin="281, 125" size="90, 17" title="Width" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Width" origin="293, 146" size="66, 66"/>
+    <view class="CTextEdit" control-tag="Width" origin="296, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
+    <view class="CTextLabel" origin="407, 125" size="90, 17" title="Mix" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Mix" origin="419, 146" size="66, 66"/>
+    <view class="CTextEdit" control-tag="Mix" origin="422, 221" size="60, 21" font="~ NormalFontSmall" font-color="DisplayText" back-color="Display" frame-color="Edge" frame-width="1" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
+    <view class="CTextLabel" origin="545, 141" size="82, 18" title="Enable" font="~ NormalFontSmall" font-color="Text" back-color="Background" frame-width="0" text-alignment="center" transparent="true"/>
+    <view class="CView" custom-view-name="Enable" origin="546, 168" size="78, 30"/>
+    <view class="CTextLabel" origin="542, 219" size="87, 22" title="FREEVERB" transparent="true" back-color="Background" font="~ NormalFontSmall" font-color="Muted" frame-width="0" text-alignment="center"/>
+  </template>
+  <control-tags>
+    <control-tag name="Enable" tag="100"/>
+    <control-tag name="Size" tag="101"/>
+    <control-tag name="Damping" tag="102"/>
+    <control-tag name="Width" tag="103"/>
+    <control-tag name="Mix" tag="104"/>
+  </control-tags>
+</vstgui-ui-description>
