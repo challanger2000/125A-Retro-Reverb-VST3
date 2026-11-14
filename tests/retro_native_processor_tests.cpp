@@ -4,6 +4,8 @@
 #include "public.sdk/source/vst/hosting/parameterchanges.h"
 #include "public.sdk/source/common/memorystream.h"
 #include <array>
+#include <atomic>
+#include <thread>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -99,6 +101,34 @@ static void testNonfinite(){
   for(int k=0;k<48;++k){Buffer<256> a;a.run(p);
     for(float x:a.ol)CHECK(x==0.f);for(float x:a.orr)CHECK(x==0.f);}
 }
+static void testDryUnityAndConcurrentState() {
+  Plugin p;
+  p.flush(a125::kMix,0.);
+  Buffer<256> large;
+  large.il.fill(20.f);
+  large.ir.fill(-20.f);
+  large.run(p);
+  for(int i=0;i<256;++i) {
+    CHECK(large.ol[i]==20.f && large.orr[i]==-20.f);
+  }
+  p.flush(a125::kMix,1.);
+  std::atomic<bool> okay{true};
+  std::thread saver([&]{
+    for(int i=0;i<500;++i) {
+      MemoryStream s;
+      if(p.p.getState(&s)!=kResultOk || s.getSize()!=24)
+        okay.store(false);
+    }
+  });
+  for(int i=0;i<500;++i) {
+    Buffer<64> audio;
+    audio.il[0]=.3f;
+    audio.ir[0]=.3f;
+    audio.run(p);
+  }
+  saver.join();
+  CHECK(okay.load());
+}
 static void testBypassClock(){
   Plugin a,b;a.flush(a125::kMix,1.);b.flush(a125::kMix,1.);
   Buffer<256> x,y;x.il[0]=x.ir[0]=y.il[0]=y.ir[0]=1.f;
@@ -113,5 +143,5 @@ static void testBypassClock(){
     tail|=(ref.ol[i]!=0.f||ref.orr[i]!=0.f);}
   CHECK(tail);
 }
-int main(){testStateAndText();testAutomation();testNonfinite();testBypassClock();
- std::puts("PASS ACTUAL RetroProcessor: Enable text/state, sample-offset + multi-point automation, NaN isolation, bypass tail-clock");}
+int main(){testStateAndText();testAutomation();testNonfinite();testBypassClock();testDryUnityAndConcurrentState();
+ std::puts("PASS ACTUAL RetroProcessor: Enable text/state, sample-offset + multi-point automation, NaN isolation, bypass tail-clock, >1.0 dry unity, concurrent state reads");}

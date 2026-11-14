@@ -82,7 +82,11 @@ tresult PLUGIN_API RetroProcessor::canProcessSampleSize(int32 size) {
 }
 
 tresult PLUGIN_API RetroProcessor::setActive(TBool active) {
-  if(active)model_.mute();
+  if(active) {
+    apply(); // Consume state configured before host activation.
+    model_.mute();
+    pendingStateRestore_.store(false,std::memory_order_release);
+  }
   return SingleComponentEffect::setActive(active);
 }
 
@@ -97,6 +101,12 @@ uint32 PLUGIN_API RetroProcessor::getTailSamples() {
 }
 
 tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
+  if(pendingStateRestore_.exchange(false,std::memory_order_acq_rel)) {
+    // Host recall may arrive from a different thread. Only the process thread
+    // is allowed to mutate the recursive Freeverb DSP while active.
+    apply();
+    model_.mute();
+  }
   // A parameter queue is ordered in sample offsets. Consume EVERY point,
   // applying it at its exact frame, rather than grabbing the last point and
   // applying that value to the entire block.
@@ -169,9 +179,9 @@ tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
           if((in.silenceFlags&(uint64{1}<<ch)) || !in.channelBuffers32[ch])
             return 0.f;
           const float x=in.channelBuffers32[ch][start+k];
-          // A single NaN must never enter Freeverb's recursive delay lines.
-          // Bound pathological but finite host samples to avoid overflow.
-          return std::isfinite(x)?std::clamp(x,-16.f,16.f):0.f;
+          // Invalid input must never poison recursive DSP. Retain every
+          // finite sample unmodified on the exact-unity dry bypass paths.
+          return std::isfinite(x)?x:0.f;
         };
         leftIn[k]=sample(0);
         rightIn[k]=nIn==2?sample(1):leftIn[k];
@@ -190,9 +200,21 @@ tresult PLUGIN_API RetroProcessor::process(ProcessData& data) {
           leftOut[k]=leftIn[k];rightOut[k]=rightIn[k];
         }
       } else {
-        // Unchanged original Jezar Freeverb filter processing.
-        model_.processreplace(leftIn.data(),rightIn.data(),
+        // Unchanged original Jezar Freeverb filter processing. Bound only
+        // pathological wet excitation; keep the dry contribution at full
+        // finite signal level in the output.
+        std::array<float,kChunk> wetL{},wetR{};
+        for(int k=0;k<n;++k) {
+          wetL[k]=std::clamp(leftIn[k],-16.f,16.f);
+          wetR[k]=std::clamp(rightIn[k],-16.f,16.f);
+        }
+        model_.processreplace(wetL.data(),wetR.data(),
                               leftOut.data(),rightOut.data(),n,1);
+        const float dry=1.f-mix_.load(std::memory_order_relaxed);
+        if(dry!=0.f)for(int k=0;k<n;++k) {
+          leftOut[k]+=dry*(leftIn[k]-wetL[k]);
+          rightOut[k]+=dry*(rightIn[k]-wetR[k]);
+        }
       }
       for(int k=0;k<n;++k) {
         out.channelBuffers32[0][start+k]=leftOut[k];
@@ -296,8 +318,9 @@ tresult PLUGIN_API RetroProcessor::setState(IBStream* stream) {
   setParamNormalized(kDamping,damping_);
   setParamNormalized(kWidth,width_);
   setParamNormalized(kMix,mix_);
-  apply();
-  model_.mute();
+  // Updating Freeverb internals here would race with process().
+  // Defer the one-time reset/coefficient change to the next audio callback.
+  pendingStateRestore_.store(true,std::memory_order_release);
   return kResultOk;
 }
 } // namespace a125
