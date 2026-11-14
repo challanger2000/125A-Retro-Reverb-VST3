@@ -10,10 +10,17 @@ add_library(freeverb_core STATIC
 target_include_directories(freeverb_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/freeverb/Components")
 set_target_properties(freeverb_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+# Reusable 125A voice/reverb DSP model matching JUCE 6.1.6 architecture.
+add_library(vocaid_reference_core INTERFACE)
+target_include_directories(vocaid_reference_core INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 enable_testing()
 add_executable(reverb_tests tests/reverb_tests.cpp)
 target_link_libraries(reverb_tests PRIVATE freeverb_core)
 add_test(NAME reverb_core_tests COMMAND reverb_tests)
+add_executable(vocaid_reference_tests tests/reference_reverb_tests.cpp)
+target_link_libraries(vocaid_reference_tests PRIVATE vocaid_reference_core)
+add_test(NAME vocaid_reference_tests COMMAND vocaid_reference_tests)
 
 option(A125_BUILD_VST3 "Build the native Windows VST3 (Steinberg SDK)" OFF)
 if(A125_BUILD_VST3)
